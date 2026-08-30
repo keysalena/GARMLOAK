@@ -8,14 +8,24 @@
     <title>@yield('title', 'Admin GARML')</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     
-    <!-- CSS khusus untuk Topbar (Navbar) -->
+    <!-- CSS khusus untuk perbaikan layout Navbar dan Main Content -->
     <style>
         .topbar {
-            background-color: #ffffff !important; /* Background putih hanya untuk navbar */
-            position: sticky !important; /* Membuat navbar menempel */
-            top: 0; /* Menempel di paling atas */
-            z-index: 50; /* Memastikan navbar berada di atas konten saat di-scroll */
-            border-bottom: 1px solid #e5e7eb; /* Garis pemisah tipis dengan area konten */
+            background-color: #ffffff !important;
+            position: sticky !important;
+            top: 0;
+            z-index: 50;
+            border-bottom: 1px solid #e5e7eb;
+            
+            /* Penyesuaian agar navbar lebih tipis */
+            padding-top: 0.75rem !important; 
+            padding-bottom: 0.75rem !important;
+            height: auto !important; 
+        }
+
+        .admin-main {
+            /* Menambahkan ruang di atas agar konten (Overview) tidak menempel ke navbar */
+            padding-top: 2rem !important; 
         }
     </style>
 </head>

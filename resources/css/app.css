@@ -915,6 +915,220 @@ a { text-decoration: none; }
     border: 1px solid rgba(217, 83, 79, 0.18);
 }
 
+/* ---------- Login page ---------- */
+.login-page {
+    background: var(--bg-soft);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.login-shell {
+    width: 100%;
+    max-width: 1040px;
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+    background: #fff;
+    border-radius: 28px;
+    box-shadow: 0 30px 80px rgba(17, 49, 36, 0.14);
+    overflow: hidden;
+    min-height: 620px;
+}
+
+/* Left visual panel — circuit / architecture motif */
+.login-visual {
+    position: relative;
+    background:
+        radial-gradient(circle at 15% 20%, rgba(255,255,255,0.10) 0, transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(255,255,255,0.08) 0, transparent 45%),
+        linear-gradient(155deg, var(--sidebar-accent) 0%, var(--sidebar-dark) 60%, #062f24 100%);
+    color: #fff;
+    padding: 44px 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+}
+
+.login-visual::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: 0.16;
+    background-image:
+        linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px);
+    background-size: 26px 26px;
+    mask-image: radial-gradient(circle at 30% 30%, black, transparent 75%);
+}
+
+.login-visual-top {
+    position: relative;
+    z-index: 1;
+}
+
+.visual-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 14px 7px 7px;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    margin-bottom: 30px;
+}
+
+.visual-badge .brand-mark {
+    width: 26px;
+    height: 26px;
+    font-size: 0.8rem;
+    box-shadow: none;
+}
+
+.login-visual h2 {
+    font-size: 1.7rem;
+    line-height: 1.28;
+    letter-spacing: -0.03em;
+    margin: 0 0 14px;
+    max-width: 320px;
+}
+
+.login-visual > p {
+    color: rgba(255,255,255,0.78);
+    font-size: 0.94rem;
+    line-height: 1.6;
+    max-width: 320px;
+    margin: 0 0 28px;
+}
+
+.visual-points {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.visual-points li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.92);
+}
+
+.point-icon {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    background: rgba(255,255,255,0.14);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 10px;
+}
+
+.point-icon svg {
+    width: 15px;
+    height: 15px;
+    fill: #fff;
+}
+
+.login-chip {
+    position: relative;
+    z-index: 1;
+    align-self: flex-end;
+    opacity: 0.9;
+}
+
+.login-chip svg { width: 108px; height: 108px; }
+
+.login-chip .chip-pulse {
+    animation: chip-pulse 2.4s ease-in-out infinite;
+    transform-origin: center;
+}
+
+@keyframes chip-pulse {
+    0%, 100% { opacity: 0.35; }
+    50% { opacity: 0.95; }
+}
+
+/* Right form panel */
+.login-panel {
+    padding: 48px 44px;
+    display: flex;
+    align-items: center;
+}
+
+.login-panel-inner {
+    width: 100%;
+    max-width: 360px;
+    margin: 0 auto;
+}
+
+.login-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 30px;
+}
+
+.login-brand h1 {
+    margin: 2px 0 0;
+    font-size: 1.3rem;
+    letter-spacing: -0.04em;
+}
+
+.login-copy {
+    margin-bottom: 24px;
+}
+
+.login-copy h2 {
+    margin: 0 0 6px;
+    font-size: 1.5rem;
+    letter-spacing: -0.04em;
+}
+
+.login-copy p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.92rem;
+    line-height: 1.55;
+}
+
+.login-form .alert {
+    margin-bottom: 4px;
+}
+
+.btn-block {
+    width: 100%;
+    padding: 12px 18px;
+    margin-top: 6px;
+    font-size: 0.95rem;
+}
+
+@media (max-width: 900px) {
+    .login-shell {
+        grid-template-columns: 1fr;
+        max-width: 460px;
+    }
+    .login-visual { display: none; }
+    .login-panel { padding: 38px 30px; }
+}
+
+@media (max-width: 480px) {
+    .login-page { padding: 16px; }
+    .login-shell { border-radius: 20px; min-height: auto; }
+    .login-panel { padding: 30px 22px; }
+}
+
 body.modal-open { overflow: hidden; }
 
 @media (max-width: 1200px) {
