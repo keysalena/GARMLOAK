@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ActivityController;
 use App\Http\Controllers\Api\BadgeController;
 use App\Http\Controllers\Api\HomeController;
 use App\Http\Controllers\Api\LeaderboardController;
@@ -30,6 +31,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [UserController::class, 'profile']);
     Route::get('/badges', [BadgeController::class, 'index']);
     Route::get('/leaderboard', [LeaderboardController::class, 'index']);
+    Route::get('/activity/summary', [ActivityController::class, 'summary']);
+    Route::post('/activity/log-time', [ActivityController::class, 'logTime']);
     Route::get('/home', [HomeController::class, 'index']);
     /**
      * @group Autentikasi

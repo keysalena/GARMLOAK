@@ -10,6 +10,7 @@ use App\Models\Materi;
 use App\Models\Module;
 use App\Models\Question;
 use App\Models\QuestionOption;
+use App\Models\UserAnswer;
 use App\Models\UserArProgress;
 use App\Models\UserMaterialProgress;
 use App\Models\UserModuleProgress;
@@ -356,6 +357,71 @@ class ModuleController extends Controller
                         })->values(),
                     ];
                 })->values(),
+            ],
+        ]);
+    }
+
+    /**
+     * @group Modul & Materi
+     *
+     * Ringkasan progress modul
+     *
+     * @authenticated
+     */
+    public function progressSummary(Request $request, $moduleId)
+    {
+        $user = $request->user();
+        $module = Module::with(['materi', 'arContents', 'challenges.questions'])
+            ->where('module_id', $moduleId)
+            ->firstOrFail();
+
+        $totalMateri = $module->materi->count();
+        $materiSelesai = UserMaterialProgress::where('user_id', $user->user_id)
+            ->whereIn('materi_id', $module->materi->pluck('materi_id'))
+            ->where('status', 'selesai')
+            ->count();
+
+        $totalAr = $module->arContents->count();
+        $arSelesai = UserArProgress::where('user_id', $user->user_id)
+            ->whereIn('ar_id', $module->arContents->pluck('ar_id'))
+            ->where('status', 'selesai')
+            ->count();
+
+        $totalChallenges = $module->challenges->sum(function ($challenge) {
+            return max((int) $challenge->jumlah_soal, $challenge->questions()->count());
+        });
+
+        $challengeDikerjakan = UserAnswer::where('user_id', $user->user_id)
+            ->whereIn('question_id', $module->challenges->flatMap(fn($challenge) => $challenge->questions->pluck('question_id'))->values())
+            ->distinct('question_id')
+            ->count('question_id');
+
+        $moduleProgress = UserModuleProgress::where('user_id', $user->user_id)
+            ->where('module_id', $module->module_id)
+            ->first();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Progress modul berhasil diambil',
+            'data' => [
+                'module_id' => $module->module_id,
+                'persen_selesai' => (int) ($moduleProgress?->persen_selesai ?? 0),
+                'materi' => [
+                    'selesai' => $materiSelesai,
+                    'total' => $totalMateri,
+                    'rasio' => $totalMateri > 0 ? $materiSelesai . '/' . $totalMateri : '0/0',
+                ],
+                'ar' => [
+                    'selesai' => $arSelesai,
+                    'total' => $totalAr,
+                    'rasio' => $totalAr > 0 ? $arSelesai . '/' . $totalAr : '0/0',
+                ],
+                'challenge' => [
+                    'dikerjakan' => $challengeDikerjakan,
+                    'total' => $totalChallenges,
+                    'rasio' => $totalChallenges > 0 ? $challengeDikerjakan . '/' . $totalChallenges : '0/0',
+                ],
+                'skor_rata_rata' => (float) ($moduleProgress?->skor_rata_rata ?? 0),
             ],
         ]);
     }
