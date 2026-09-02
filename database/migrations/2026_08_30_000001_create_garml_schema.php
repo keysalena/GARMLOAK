@@ -70,6 +70,7 @@ return new class extends Migration
             $table->id('question_id');
             $table->foreignId('challenge_id')->constrained('challenges', 'challenge_id')->cascadeOnDelete();
             $table->text('pertanyaan');
+            $table->text('penjelasan')->nullable();
             $table->integer('urutan');
             $table->integer('xp_reward')->default(30);
             $table->timestamp('deleted_at')->nullable();

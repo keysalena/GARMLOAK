@@ -20,6 +20,7 @@ class Question extends Model
         'pertanyaan',
         'urutan',
         'xp_reward',
+        'penjelasan',
     ];
 
     protected $casts = [

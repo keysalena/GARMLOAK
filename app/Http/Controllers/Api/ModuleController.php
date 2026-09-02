@@ -4,11 +4,18 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ModuleResource;
+use App\Models\ArContent;
+use App\Models\Challenge;
 use App\Models\Materi;
 use App\Models\Module;
+use App\Models\Question;
+use App\Models\QuestionOption;
+use App\Models\UserArProgress;
 use App\Models\UserMaterialProgress;
 use App\Models\UserModuleProgress;
+use App\Models\XpTransaction;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class ModuleController extends Controller
 {
@@ -171,6 +178,184 @@ class ModuleController extends Controller
                 'status' => $progress->status,
                 'selesai_pada' => $progress->selesai_pada,
                 'persen_selesai' => $this->getModuleProgressPercent($user->user_id, $materi->module_id),
+            ],
+        ]);
+    }
+
+    /**
+     * @group Modul & Materi
+     *
+     * Daftar AR pada modul
+     *
+     * Mendapatkan semua data AR yang tersedia di modul tertentu.
+     *
+     * @authenticated
+     */
+    public function arList(Request $request, $moduleId)
+    {
+        $module = Module::where('module_id', $moduleId)->firstOrFail();
+
+        $arItems = ArContent::where('module_id', $module->module_id)
+            ->orderBy('urutan', 'asc')
+            ->get();
+
+        $progressMap = UserArProgress::where('user_id', $request->user()->user_id)
+            ->whereIn('ar_id', $arItems->pluck('ar_id'))
+            ->get()
+            ->keyBy('ar_id');
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Daftar AR berhasil diambil',
+            'data' => $arItems->map(function ($item) use ($progressMap) {
+                $progress = $progressMap->get($item->ar_id);
+
+                return [
+                    'id' => $item->ar_id,
+                    'module_id' => $item->module_id,
+                    'judul' => $item->judul,
+                    'marker_image_url' => $item->marker_image_url,
+                    'model_3d_url' => $item->model_3d_url,
+                    'penjelasan' => $item->penjelasan,
+                    'urutan' => $item->urutan,
+                    'status' => $progress?->status ?? 'belum',
+                ];
+            })->values(),
+        ]);
+    }
+
+    /**
+     * @group Modul & Materi
+     *
+     * Selesaikan AR
+     *
+     * Mencatat bahwa user telah berhasil membuka / memindai AR dan memberi XP pada first-open.
+     *
+     * @authenticated
+     */
+    public function completeAr(Request $request, $arId)
+    {
+        $user = $request->user();
+        $ar = ArContent::where('ar_id', $arId)->firstOrFail();
+
+        $alreadyOpened = UserArProgress::where('user_id', $user->user_id)
+            ->where('ar_id', $ar->ar_id)
+            ->exists();
+
+        $progress = $alreadyOpened
+            ? UserArProgress::where('user_id', $user->user_id)->where('ar_id', $ar->ar_id)->firstOrFail()
+            : new UserArProgress();
+
+        $progress->user_id = $user->user_id;
+        $progress->ar_id = $ar->ar_id;
+        $progress->status = 'selesai';
+        $progress->selesai_pada = now();
+        $progress->save();
+
+        $xpAward = 30;
+        $xpGiven = 0;
+
+        $hasXpTransaction = XpTransaction::where('user_id', $user->user_id)
+            ->where('source_type', 'ar_explore')
+            ->where('source_id', $ar->ar_id)
+            ->exists();
+
+        if (!$alreadyOpened && !$hasXpTransaction) {
+            $transactionId = (string) Str::uuid();
+
+            XpTransaction::create([
+                'transaction_id' => $transactionId,
+                'user_id' => $user->user_id,
+                'source_type' => 'ar_explore',
+                'source_id' => $ar->ar_id,
+                'jumlah_xp' => $xpAward,
+                'created_at' => now(),
+            ]);
+
+            $user->total_xp = (int) $user->total_xp + $xpAward;
+            $user->save();
+            $xpGiven = $xpAward;
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'AR berhasil ditandai selesai',
+            'data' => [
+                'ar_id' => $ar->ar_id,
+                'module_id' => $ar->module_id,
+                'status' => $progress->status,
+                'selesai_pada' => $progress->selesai_pada,
+                'xp_diberikan' => $xpGiven,
+            ],
+        ]);
+    }
+
+    /**
+     * @group Modul & Materi
+     *
+     * Daftar challenge pada modul
+     *
+     * @authenticated
+     */
+    public function challengeList(Request $request, $moduleId)
+    {
+        $module = Module::where('module_id', $moduleId)->firstOrFail();
+
+        $challenges = Challenge::where('module_id', $module->module_id)
+            ->orderBy('challenge_id', 'asc')
+            ->get();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Daftar challenge berhasil diambil',
+            'data' => $challenges->map(function ($challenge) {
+                return [
+                    'id' => $challenge->challenge_id,
+                    'module_id' => $challenge->module_id,
+                    'judul' => $challenge->judul,
+                    'jumlah_soal' => $challenge->jumlah_soal,
+                ];
+            })->values(),
+        ]);
+    }
+
+    /**
+     * @group Modul & Materi
+     *
+     * Daftar pertanyaan challenge
+     *
+     * @authenticated
+     */
+    public function questionList(Request $request, $challengeId)
+    {
+        $challenge = Challenge::with(['questions.options' => function ($query) {
+            $query->orderBy('option_id', 'asc');
+        }])->where('challenge_id', $challengeId)->firstOrFail();
+
+        $questions = $challenge->questions()->orderBy('urutan', 'asc')->get();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Daftar pertanyaan berhasil diambil',
+            'data' => [
+                'challenge_id' => $challenge->challenge_id,
+                'module_id' => $challenge->module_id,
+                'judul' => $challenge->judul,
+                'jumlah_soal' => $challenge->jumlah_soal,
+                'questions' => $questions->map(function ($question) {
+                    return [
+                        'id' => $question->question_id,
+                        'pertanyaan' => $question->pertanyaan,
+                        'urutan' => $question->urutan,
+                        'xp_reward' => $question->xp_reward,
+                        'options' => $question->options->map(function ($option) {
+                            return [
+                                'id' => $option->option_id,
+                                'teks_opsi' => $option->teks_opsi,
+                            ];
+                        })->values(),
+                    ];
+                })->values(),
             ],
         ]);
     }

@@ -18,6 +18,7 @@ class XpTransaction extends Model
         'source_type',
         'source_id',
         'jumlah_xp',
+        'created_at',
     ];
 
     protected $casts = [
