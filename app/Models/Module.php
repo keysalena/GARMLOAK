@@ -33,6 +33,11 @@ class Module extends Model
         return $this->hasMany(Materi::class, 'module_id', 'module_id');
     }
 
+    public function userProgress()
+    {
+        return $this->hasOne(UserModuleProgress::class, 'module_id', 'module_id');
+    }
+
     public function arContents()
     {
         return $this->hasMany(ArContent::class, 'module_id', 'module_id');

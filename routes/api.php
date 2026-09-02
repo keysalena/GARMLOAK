@@ -13,6 +13,9 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/modules', [ModuleController::class, 'index']);
+    Route::get('/modules/{module_id}', [ModuleController::class, 'show']);
+    Route::get('/materi/{materi_id}', [ModuleController::class, 'detail']);
+    Route::post('/materi/{materi_id}/complete', [ModuleController::class, 'complete']);
     Route::get('/user', [UserController::class, 'profile']);
     Route::get('/home', [HomeController::class, 'index']);
     /**

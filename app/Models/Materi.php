@@ -31,4 +31,9 @@ class Materi extends Model
     {
         return $this->belongsTo(Module::class, 'module_id', 'module_id');
     }
+
+    public function userProgress()
+    {
+        return $this->hasOne(UserMaterialProgress::class, 'materi_id', 'materi_id');
+    }
 }
