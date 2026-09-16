@@ -112,7 +112,7 @@
     
     // Route dasar dari Laravel
     const storeUrl = "{{ route('admin.ar-content.store') }}";
-    const updateUrlBase = "{{ url('admin/ar-content') }}"; // URL base tanpa ID
+    const updateUrlBase = "{{ url('ar-content') }}"; // URL base tanpa ID
 
     function openModal(mode, data = null) {
         // Reset form setiap kali modal dibuka

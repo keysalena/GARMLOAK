@@ -3,15 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\ArContent;
-use App\Models\Challenge;
 use App\Models\Kelas;
 use App\Models\Materi;
 use App\Models\Module;
 use App\Models\Question;
 use App\Models\User;
+use App\Models\QuestionOption;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 
 class AdminDashboardController extends Controller
 {
@@ -23,7 +24,6 @@ class AdminDashboardController extends Controller
             'totalModul'      => Module::count(),
             'totalMateri'     => Materi::count(),
             'totalAr'         => ArContent::count(),
-            'totalChallenge'  => Challenge::count(),
             'totalQuestion'   => Question::count(),
         ]);
     }
@@ -31,6 +31,7 @@ class AdminDashboardController extends Controller
     public function kelasIndex()
     {
         $items = Kelas::orderBy('nama_kelas')->get();
+        $items = Kelas::withCount('mahasiswa')->orderBy('nama_kelas')->get();
 
         return view('admin.pages.kelas', compact('items'));
     }
@@ -66,14 +67,16 @@ class AdminDashboardController extends Controller
         return back()->with('success', 'Kelas berhasil dihapus.');
     }
 
-    public function mahasiswaIndex()
+    public function mahasiswaIndex(Kelas $kelas)
     {
-        $items = User::with('kelas')
-            ->where('role', 'mahasiswa')
+        // Ambil mahasiswa yang HANYA berada di kelas yang diklik
+        $items = User::where('role', 'mahasiswa')
+            ->where('kelas_id', $kelas->kelas_id)
             ->orderBy('nama')
             ->get();
 
-        return view('admin.pages.mahasiswa', compact('items'));
+        // Lempar variabel $items dan $kelas ke view
+        return view('admin.pages.mahasiswa', compact('items', 'kelas'));
     }
 
     public function storeMahasiswa(Request $request)
@@ -173,29 +176,50 @@ class AdminDashboardController extends Controller
         return back()->with('success', 'Modul berhasil dihapus.');
     }
 
-    public function materiIndex()
+    public function materiIndex(Module $module)
     {
-        $items = Materi::with('module')
+        // Ambil materi yang HANYA dimiliki oleh modul yang diklik
+        $items = Materi::where('module_id', $module->module_id)
             ->orderBy('urutan')
             ->get();
 
-        $modules = Module::orderBy('urutan')->get();
-
-        return view('admin.pages.materi', compact('items', 'modules'));
+        return view('admin.pages.materi', compact('items', 'module'));
     }
 
     public function storeMateri(Request $request)
     {
-        $data = $request->validate([
+        $request->validate([
             'module_id'   => 'required|exists:modules,module_id',
             'judul'       => 'required|string|max:150',
-            'tipe'        => 'required|in:teks,video,pdf,kuis_singkat',
+            'tipe'        => 'required|in:teks,video,pdf,pendahuluan',
+            'urutan'      => 'required|integer',
+            'konten_teks' => 'nullable|string',
             'konten_url'  => 'nullable|string|max:255',
+            'konten_file' => 'nullable|file|mimes:pdf,mp4,mov,avi|max:51200',
         ]);
 
+        $kontenUrl = null;
+        $kontenTeks = null;
+
+        // PERBAIKAN: Izinkan 'pendahuluan' untuk menyimpan teks
+        if (in_array($request->tipe, ['teks', 'pendahuluan'])) {
+            $kontenTeks = $request->konten_teks;
+        } elseif (in_array($request->tipe, ['video', 'pdf'])) {
+            if ($request->hasFile('konten_file')) {
+                $path = $request->file('konten_file')->store('materi_files', 'public');
+                $kontenUrl = 'storage/' . $path;
+            } else {
+                $kontenUrl = $request->konten_url;
+            }
+        }
+
         Materi::create([
-            ...$data,
-            'urutan' => (Materi::where('module_id', $data['module_id'])->max('urutan') ?? 0) + 1,
+            'module_id'   => $request->module_id,
+            'judul'       => $request->judul,
+            'tipe'        => $request->tipe,
+            'urutan'      => $request->urutan,
+            'konten_teks' => $kontenTeks,
+            'konten_url'  => $kontenUrl,
         ]);
 
         return back()->with('success', 'Materi berhasil ditambahkan.');
@@ -203,20 +227,63 @@ class AdminDashboardController extends Controller
 
     public function updateMateri(Request $request, Materi $materi)
     {
-        $data = $request->validate([
-            'module_id'  => 'required|exists:modules,module_id',
-            'judul'      => 'required|string|max:150',
-            'tipe'       => 'required|in:teks,video,pdf,kuis_singkat',
-            'konten_url' => 'nullable|string|max:255',
+        $request->validate([
+            'module_id'   => 'required|exists:modules,module_id',
+            'judul'       => 'required|string|max:150',
+            'tipe'        => 'required|in:teks,video,pdf,pendahuluan',
+            'urutan'      => 'required|integer',
+            'konten_teks' => 'nullable|string',
+            'konten_url'  => 'nullable|string|max:255',
+            'konten_file' => 'nullable|file|mimes:pdf,mp4,mov,avi|max:51200',
         ]);
 
-        $materi->update($data);
+        $kontenUrl = $materi->konten_url;
+        $kontenTeks = $materi->konten_teks;
+
+        // PERBAIKAN: Izinkan 'pendahuluan' untuk menyimpan teks
+        if (in_array($request->tipe, ['teks', 'pendahuluan'])) {
+            $kontenTeks = $request->konten_teks;
+
+            // Bersihkan URL/File lama jika sebelumnya bukan teks
+            if ($kontenUrl && str_contains($kontenUrl, 'materi_files/')) {
+                Storage::disk('public')->delete(str_replace('storage/', '', $kontenUrl));
+            }
+            $kontenUrl = null;
+        } elseif (in_array($request->tipe, ['video', 'pdf'])) {
+            $kontenTeks = null;
+
+            if ($request->hasFile('konten_file')) {
+                if ($kontenUrl && str_contains($kontenUrl, 'materi_files/')) {
+                    Storage::disk('public')->delete(str_replace('storage/', '', $kontenUrl));
+                }
+                $path = $request->file('konten_file')->store('materi_files', 'public');
+                $kontenUrl = 'storage/' . $path;
+            } elseif ($request->filled('konten_url')) {
+                if ($kontenUrl && str_contains($kontenUrl, 'materi_files/')) {
+                    Storage::disk('public')->delete(str_replace('storage/', '', $kontenUrl));
+                }
+                $kontenUrl = $request->konten_url;
+            }
+        }
+
+        $materi->update([
+            'module_id'   => $request->module_id,
+            'judul'       => $request->judul,
+            'tipe'        => $request->tipe,
+            'urutan'      => $request->urutan,
+            'konten_teks' => $kontenTeks,
+            'konten_url'  => $kontenUrl,
+        ]);
 
         return back()->with('success', 'Materi berhasil diperbarui.');
     }
 
     public function destroyMateri(Materi $materi)
     {
+        if ($materi->konten_url && str_contains($materi->konten_url, 'materi_files/')) {
+            Storage::disk('public')->delete(str_replace('storage/', '', $materi->konten_url));
+        }
+
         $materi->delete();
 
         return back()->with('success', 'Materi berhasil dihapus.');
@@ -273,121 +340,116 @@ class AdminDashboardController extends Controller
         return back()->with('success', 'AR Content berhasil dihapus.');
     }
 
-    public function challengeIndex()
+    // ==========================================
+    // QUESTIONS (SOAL KUIS) - Langsung ke Modul
+    // ==========================================
+    public function questionsIndex(Module $module)
     {
-        $items = Challenge::with('module')
-            ->orderBy('challenge_id')
+        // Ambil soal yang HANYA dimiliki oleh modul yang diklik
+        $items = Question::where('module_id', $module->module_id)
+            ->orderBy('urutan')
             ->get();
 
-        $modules = Module::orderBy('urutan')->get();
-
-        return view('admin.pages.challenge', compact('items', 'modules'));
-    }
-
-    public function storeChallenge(Request $request)
-    {
-        $data = $request->validate([
-            'module_id' => 'required|exists:modules,module_id',
-            'judul'     => 'required|string|max:150',
-        ]);
-
-        Challenge::create([
-            ...$data,
-            'jumlah_soal' => 0,
-        ]);
-
-        return back()->with('success', 'Challenge berhasil ditambahkan.');
-    }
-
-    public function updateChallenge(Request $request, Challenge $challenge)
-    {
-        $data = $request->validate([
-            'module_id' => 'required|exists:modules,module_id',
-            'judul'     => 'required|string|max:150',
-        ]);
-
-        $challenge->update($data);
-
-        return back()->with('success', 'Challenge berhasil diperbarui.');
-    }
-
-    public function destroyChallenge(Challenge $challenge)
-    {
-        $challenge->delete();
-
-        return back()->with('success', 'Challenge berhasil dihapus.');
-    }
-
-    public function questionsIndex()
-    {
-        $items = Question::with('challenge')
-            ->orderBy('question_id')
-            ->get();
-
-        $challenges = Challenge::orderBy('challenge_id')->get();
-
-        return view('admin.pages.questions', compact('items', 'challenges'));
+        // Lempar variabel $items dan $module ke view
+        return view('admin.pages.questions', compact('items', 'module'));
     }
 
     public function storeQuestion(Request $request)
     {
         $data = $request->validate([
-            'challenge_id' => 'required|exists:challenges,challenge_id',
-            'pertanyaan'   => 'required|string',
-            'xp_reward'    => 'nullable|integer|min:0',
+            'module_id'  => 'required|exists:modules,module_id',
+            'pertanyaan' => 'required|string',
+            'xp_reward'  => 'nullable|integer|min:0',
         ]);
 
         Question::create([
             ...$data,
-            'urutan'    => (Question::where('challenge_id', $data['challenge_id'])->max('urutan') ?? 0) + 1,
+            'urutan'    => (Question::where('module_id', $data['module_id'])->max('urutan') ?? 0) + 1,
             'xp_reward' => $data['xp_reward'] ?? 30,
         ]);
 
-        $this->updateJumlahSoal($data['challenge_id']);
-
-        return back()->with('success', 'Question berhasil ditambahkan.');
+        return back()->with('success', 'Soal berhasil ditambahkan.');
     }
 
     public function updateQuestion(Request $request, Question $question)
     {
         $data = $request->validate([
-            'challenge_id' => 'required|exists:challenges,challenge_id',
-            'pertanyaan'   => 'required|string',
-            'xp_reward'    => 'nullable|integer|min:0',
+            'module_id'  => 'required|exists:modules,module_id',
+            'pertanyaan' => 'required|string',
+            'xp_reward'  => 'nullable|integer|min:0',
         ]);
-
-        $oldChallengeId = $question->challenge_id;
 
         $question->update([
             ...$data,
             'xp_reward' => $data['xp_reward'] ?? 30,
         ]);
 
-        $this->updateJumlahSoal($oldChallengeId);
-
-        if ($oldChallengeId != $data['challenge_id']) {
-            $this->updateJumlahSoal($data['challenge_id']);
-        }
-
-        return back()->with('success', 'Question berhasil diperbarui.');
+        return back()->with('success', 'Soal berhasil diperbarui.');
     }
 
     public function destroyQuestion(Question $question)
     {
-        $challengeId = $question->challenge_id;
-
         $question->delete();
 
-        $this->updateJumlahSoal($challengeId);
+        return back()->with('success', 'Soal berhasil dihapus.');
+    }
+    public function optionsIndex(Question $question)
+    {
+        // Ambil opsi jawaban khusus untuk soal ini
+        $items = QuestionOption::where('question_id', $question->question_id)->get();
 
-        return back()->with('success', 'Question berhasil dihapus.');
+        return view('admin.pages.options', compact('items', 'question'));
     }
 
-    private function updateJumlahSoal($challengeId)
+    public function storeOption(Request $request)
     {
-        Challenge::where('challenge_id', $challengeId)
-            ->update([
-                'jumlah_soal' => Question::where('challenge_id', $challengeId)->count()
-            ]);
+        $data = $request->validate([
+            'question_id' => 'required|exists:questions,question_id',
+            'teks_opsi'   => 'required|string|max:255',
+        ]);
+
+        $isCorrect = $request->has('is_correct') ? true : false;
+
+        // Jika opsi ini diset sebagai jawaban BENAR, maka ubah opsi lain di soal ini menjadi SALAH
+        if ($isCorrect) {
+            QuestionOption::where('question_id', $data['question_id'])->update(['is_correct' => false]);
+        }
+
+        QuestionOption::create([
+            'question_id' => $data['question_id'],
+            'teks_opsi'   => $data['teks_opsi'],
+            'is_correct'  => $isCorrect,
+        ]);
+
+        return back()->with('success', 'Opsi jawaban berhasil ditambahkan.');
+    }
+
+    public function updateOption(Request $request, QuestionOption $option)
+    {
+        $data = $request->validate([
+            'question_id' => 'required|exists:questions,question_id',
+            'teks_opsi'   => 'required|string|max:255',
+        ]);
+
+        $isCorrect = $request->has('is_correct') ? true : false;
+
+        // Jika opsi ini diset sebagai jawaban BENAR, pastikan opsi lain menjadi SALAH
+        if ($isCorrect) {
+            QuestionOption::where('question_id', $data['question_id'])->update(['is_correct' => false]);
+        }
+
+        $option->update([
+            'teks_opsi'  => $data['teks_opsi'],
+            'is_correct' => $isCorrect,
+        ]);
+
+        return back()->with('success', 'Opsi jawaban berhasil diperbarui.');
+    }
+
+    public function destroyOption(QuestionOption $option)
+    {
+        $option->delete();
+
+        return back()->with('success', 'Opsi jawaban berhasil dihapus.');
     }
 }

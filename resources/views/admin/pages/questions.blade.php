@@ -1,23 +1,21 @@
 @extends('layouts.admin')
 
-@section('title', 'Questions')
+@section('title', 'Soal Kuis Modul')
 
 @section('content')
-<!-- ==========================================
-     HEADER & TOMBOL TAMBAH
-=========================================== -->
 <div class="page-header">
     <div>
-        <p class="eyebrow text-green">Latihan</p>
-        <h1>Kelola Questions</h1>
+        <!-- Menampilkan data dari $module -->
+        <p class="eyebrow text-green">Modul: {{ $module->kode_modul }}</p>
+        <h1>Soal Kuis: {{ $module->judul }}</h1>
     </div>
-    <!-- Tombol Add memanggil fungsi JS openModal('create') -->
-    <button type="button" class="btn btn-primary" onclick="openModal('create')">+ Tambah Question</button>
+    <div>
+        <!-- Tombol kembali diarahkan ke index modul -->
+        <a href="{{ route('admin.modul.index') }}" class="btn btn-secondary">Kembali ke Modul</a>
+        <button type="button" class="btn btn-primary" onclick="openModal('create')">+ Tambah Soal</button>
+    </div>
 </div>
 
-<!-- ==========================================
-     TABEL DATA QUESTIONS
-=========================================== -->
 <div class="panel-card">
     <div class="panel-header">
         <h3>Daftar Pertanyaan</h3>
@@ -28,7 +26,6 @@
         <thead>
             <tr>
                 <th>Pertanyaan</th>
-                <th>Challenge</th>
                 <th>XP</th>
                 <th>Urutan</th>
                 <th>Aksi</th>
@@ -38,53 +35,47 @@
             @forelse ($items as $item)
             <tr>
                 <td>{{ \Illuminate\Support\Str::limit($item->pertanyaan, 70) }}</td>
-                <td>{{ $item->challenge?->judul ?? '-' }}</td>
                 <td>{{ $item->xp_reward }}</td>
                 <td>{{ $item->urutan ?? '-' }}</td>
+                <!-- Ubah bagian ini di questions.blade.php -->
                 <td class="action-cell">
-                    <!-- Tombol Edit memanggil fungsi JS dengan parameter data item -->
-                    <button type="button" class="btn btn-small btn-secondary" 
-                            onclick="openModal('edit', {{ $item }})">Edit</button>
-                    
-                    <!-- Tombol Hapus -->
-                    <button type="button" class="btn btn-small btn-danger" 
-                            data-delete-url="{{ route('admin.questions.destroy', $item->question_id) }}" 
-                            data-delete-title="Hapus Question">Hapus</button>
+                    <a href="{{ route('admin.questions.options', $item->question_id) }}" class="btn btn-small btn-primary">Opsi Jawaban</a>
+
+                    <button type="button" class="btn btn-small btn-secondary"
+                        data-item="{{ json_encode($item) }}"
+                        onclick="openModal('edit', JSON.parse(this.getAttribute('data-item')))">Edit</button>
+
+                    <button type="button" class="btn btn-small btn-danger"
+                        onclick="deleteQuestion('{{ route('admin.questions.destroy', $item->question_id) }}')">Hapus</button>
                 </td>
             </tr>
             @empty
             <tr>
-                <td colspan="5" class="empty-state">Belum ada pertanyaan.</td>
+                <td colspan="4" class="empty-state">Belum ada pertanyaan.</td>
             </tr>
             @endforelse
         </tbody>
     </table>
 </div>
 
-<!-- ==========================================
-     MODAL FORM (TAMBAH / EDIT)
-=========================================== -->
+<form id="deleteForm" method="POST" style="display: none;">
+    @csrf
+    @method('DELETE')
+</form>
+
 <div id="questionModal" class="modal-overlay" style="display: none;">
     <div class="modal-content panel-card" style="max-width: 500px; margin: 5% auto;">
         <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
             <h3 id="modalTitle">Tambah Question</h3>
             <button type="button" onclick="closeModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
         </div>
-        
+
         <form id="questionForm" method="POST" action="" class="login-form" style="padding: 20px;">
             @csrf
-            <!-- Method spoofing untuk keperluan Edit (PUT) -->
             <input type="hidden" name="_method" id="formMethod" value="POST">
 
-            <label class="field-group">
-                <span>Challenge</span>
-                <select name="challenge_id" id="inputChallenge" required>
-                    <option value="" disabled selected>Pilih Challenge</option>
-                    @foreach ($challenges as $challenge)
-                    <option value="{{ $challenge->challenge_id }}">{{ $challenge->judul }}</option>
-                    @endforeach
-                </select>
-            </label>
+            <!-- UBAH DARI challenge_id MENJADI module_id -->
+            <input type="hidden" name="module_id" value="{{ $module->module_id }}">
 
             <label class="field-group">
                 <span>Pertanyaan</span>
@@ -104,53 +95,50 @@
     </div>
 </div>
 
-<!-- CSS Modal Overlay -->
 <style>
     .modal-overlay {
-        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.5);
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
         z-index: 1000;
-        display: flex; align-items: flex-start; justify-content: center;
-        overflow-y: auto; padding: 20px;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        overflow-y: auto;
+        padding: 20px;
     }
 </style>
 
-<!-- ==========================================
-     JAVASCRIPT UNTUK MODAL
-=========================================== -->
 <script>
     const modal = document.getElementById('questionModal');
     const form = document.getElementById('questionForm');
     const modalTitle = document.getElementById('modalTitle');
     const formMethod = document.getElementById('formMethod');
-    
-    // Route dasar dari Laravel
+
     const storeUrl = "{{ route('admin.questions.store') }}";
-    const updateUrlBase = "{{ url('admin/questions') }}"; // Base URL untuk update
+    // Perbaikan URL Base (Pastikan mengarah ke /questions)
+    const updateUrlBase = "{{ url('questions') }}";
 
     function openModal(mode, data = null) {
-        // Reset form setiap kali modal dibuka
         form.reset();
 
         if (mode === 'create') {
             modalTitle.innerText = 'Tambah Question';
             form.action = storeUrl;
-            formMethod.value = 'POST'; // Gunakan POST untuk insert
-            
-            // Set default value untuk XP saat tambah
+            formMethod.value = 'POST';
             document.getElementById('inputXpReward').value = 30;
         } else if (mode === 'edit' && data) {
             modalTitle.innerText = 'Edit Question';
-            // Gabungkan Base URL dengan ID Question
             form.action = `${updateUrlBase}/${data.question_id}`;
-            formMethod.value = 'PUT'; // Gunakan PUT untuk update
-            
-            // Isi form dengan data yang dilempar dari button Edit
-            document.getElementById('inputChallenge').value = data.challenge_id || '';
+            formMethod.value = 'PUT';
+
             document.getElementById('inputPertanyaan').value = data.pertanyaan || '';
             document.getElementById('inputXpReward').value = data.xp_reward || 30;
         }
-        
+
         modal.style.display = 'block';
     }
 
@@ -158,7 +146,14 @@
         modal.style.display = 'none';
     }
 
-    // Tutup modal jika user klik di luar kotak modal
+    function deleteQuestion(url) {
+        if (confirm('Apakah Anda yakin ingin menghapus Soal ini?')) {
+            const deleteForm = document.getElementById('deleteForm');
+            deleteForm.action = url;
+            deleteForm.submit();
+        }
+    }
+
     window.onclick = function(event) {
         if (event.target === modal) {
             closeModal();

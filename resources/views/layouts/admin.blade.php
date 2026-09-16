@@ -7,7 +7,9 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Admin GARML')</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    
+    <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5/48.5.0/ckeditor5.css">
+
     <!-- CSS khusus untuk perbaikan layout Navbar dan Main Content -->
     <style>
         .topbar {
@@ -16,16 +18,16 @@
             top: 0;
             z-index: 50;
             border-bottom: 1px solid #e5e7eb;
-            
+
             /* Penyesuaian agar navbar lebih tipis */
-            padding-top: 0.75rem !important; 
+            padding-top: 0.75rem !important;
             padding-bottom: 0.75rem !important;
-            height: auto !important; 
+            height: auto !important;
         }
 
         .admin-main {
             /* Menambahkan ruang di atas agar konten (Overview) tidak menempel ke navbar */
-            padding-top: 2rem !important; 
+            padding-top: 2rem !important;
         }
     </style>
 </head>
@@ -36,7 +38,7 @@
 
         <div class="admin-content-wrap">
             <header class="topbar">
-                
+
                 <!-- Tanggal Hari Ini (Pengganti Search) -->
                 <div class="topbar-left" style="color: var(--text-muted, #6b7280); font-size: 0.9rem; font-weight: 500;">
                     {{ \Carbon\Carbon::now()->translatedFormat('l, d F Y') }}
@@ -53,7 +55,7 @@
                             <path d="M12 3.5a5.5 5.5 0 0 1 5.5 5.5v3.4l1.5 3.9h-14l1.5-3.9V9A5.5 5.5 0 0 1 12 3.5Zm0 17a2.2 2.2 0 0 1-2.2-2.2h4.4A2.2 2.2 0 0 1 12 20.5Z" />
                         </svg>
                     </button>
-                    
+
                     <!-- Data User Autentikasi (Dinamis) -->
                     @auth
                     <div class="profile-badge">
@@ -66,7 +68,7 @@
                         </div>
                     </div>
                     @endauth
-                    
+
                 </div>
             </header>
 

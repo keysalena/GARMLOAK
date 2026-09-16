@@ -3,41 +3,50 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Module;
+use App\Models\User;
 use Illuminate\Http\Request;
-use App\Models\UserModuleProgress;
 
 class HomeController extends Controller
 {
+    /**
+     * Data Beranda (Home)
+     * Mengambil profil user dan modul terakhir yang sedang dipelajari.
+     */
     public function index(Request $request)
     {
-        // 1. Ambil data user yang sedang login beserta info batas XP levelnya
-        $user = $request->user()->load('levelInfo');
+        $user = $request->user();
 
-        // 2. Cari progres modul terakhir yang statusnya masih 'berjalan'
-        $lanjutkanBelajar = UserModuleProgress::with('module')
-            ->where('user_id', $user->user_id)
-            ->where('status', 'berjalan')
-            ->orderBy('updated_at', 'desc')
-            ->first();
+        // Logika sederhana penentuan target XP (Bisa disesuaikan dengan aturan gamifikasi Anda)
+        $xpTarget = $user->level * 500; 
 
-        // 3. Susun data agregasi untuk beranda aplikasi
+        // Mencari modul terakhir yang sedang dipelajari (misalnya berdasarkan history progress)
+        // Di sini saya asumsikan mengambil modul pertama jika user belum punya progress
+        $lastModule = Module::orderBy('urutan', 'asc')->first();
+        
+        $moduleData = null;
+        if ($lastModule) {
+            // Simulasi perhitungan persentase progress (bisa diquery dari tabel user_material_progress)
+            $progressPercentage = 60; // Hardcode sementara, sesuaikan dengan query DB Anda
+
+            $moduleData = [
+                'module_id' => $lastModule->module_id,
+                'urutan' => $lastModule->urutan,
+                'judul' => $lastModule->judul,
+                'progress' => $progressPercentage,
+            ];
+        }
+
         return response()->json([
-            'status' => 'success',
+            'success' => true,
             'data' => [
-                'profil_singkat' => [
+                'user' => [
                     'nama' => $user->nama,
                     'level' => $user->level,
-                    'total_xp' => $user->total_xp,
-                    'batas_xp' => $user->levelInfo->xp_max ?? 0,
-                    'avatar_url' => $user->avatar_url,
+                    'xp' => $user->total_xp,
+                    'xp_target' => $xpTarget,
                 ],
-                'lanjutkan_belajar' => $lanjutkanBelajar ? [
-                    'module_id' => $lanjutkanBelajar->module_id,
-                    'kode_modul' => $lanjutkanBelajar->module->kode_modul ?? '',
-                    'judul_modul' => $lanjutkanBelajar->module->judul ?? '',
-                    'persen_selesai' => $lanjutkanBelajar->persen_selesai,
-                    'icon_url' => $lanjutkanBelajar->module->icon_url ?? null,
-                ] : null // Akan mereturn null jika tidak ada modul yang sedang dikerjakan
+                'last_module' => $moduleData
             ]
         ]);
     }

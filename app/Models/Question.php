@@ -16,7 +16,7 @@ class Question extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'challenge_id',
+        'module_id',
         'pertanyaan',
         'urutan',
         'xp_reward',
@@ -27,11 +27,12 @@ class Question extends Model
         'deleted_at' => 'datetime',
     ];
 
-    public function challenge()
+    public function module()
     {
-        return $this->belongsTo(Challenge::class, 'challenge_id', 'challenge_id');
+        return $this->belongsTo(Module::class, 'module_id', 'module_id');
     }
 
+    // Relasi ke Opsi Jawaban (A, B, C, D)
     public function options()
     {
         return $this->hasMany(QuestionOption::class, 'question_id', 'question_id');

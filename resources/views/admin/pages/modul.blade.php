@@ -41,15 +41,23 @@
                 <td>{{ $item->judul }}</td>
                 <td>{{ $item->sub_cpmk ?? '-' }}</td>
                 <td>{{ $item->urutan ?? '-' }}</td>
+                <!-- Pada bagian <tbody> tabel modul, ubah <td> aksi menjadi seperti ini: -->
                 <td class="action-cell">
-                    <!-- Tombol Edit memanggil fungsi JS dengan parameter data item -->
-                    <button type="button" class="btn btn-small btn-secondary" 
-                            onclick="openModal('edit', {{ $item }})">Edit</button>
-                    
-                    <!-- Tombol Hapus -->
-                    <button type="button" class="btn btn-small btn-danger" 
-                            data-delete-url="{{ route('admin.modul.destroy', $item->module_id) }}" 
-                            data-delete-title="Hapus Modul">Hapus</button>
+                    <!-- Tombol untuk masuk ke materi khusus modul ini -->
+                    <a href="{{ route('admin.modul.materi', $item->module_id) }}" class="btn btn-small btn-primary">
+                        Kelola Materi
+                    </a>
+
+                    <button type="button" class="btn btn-small btn-secondary"
+                        onclick="openModal('edit', {{ $item }})">Edit</button>
+
+                    <button type="button" class="btn btn-small btn-danger"
+                        data-delete-url="{{ route('admin.modul.destroy', $item->module_id) }}"
+                        data-delete-title="Hapus Modul">Hapus</button>
+
+                    <a href="{{ route('admin.modul.questions', $item->module_id) }}" class="btn btn-small btn-primary">
+                        Kelola Kuis
+                    </a>
                 </td>
             </tr>
             @empty
@@ -70,7 +78,7 @@
             <h3 id="modalTitle">Tambah Modul</h3>
             <button type="button" onclick="closeModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
         </div>
-        
+
         <form id="modulForm" method="POST" action="" class="login-form" style="padding: 20px;">
             @csrf
             <!-- Method spoofing untuk keperluan Edit (PUT) -->
@@ -107,11 +115,18 @@
 <!-- CSS Modal Overlay -->
 <style>
     .modal-overlay {
-        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.5);
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
         z-index: 1000;
-        display: flex; align-items: flex-start; justify-content: center;
-        overflow-y: auto; padding: 20px;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        overflow-y: auto;
+        padding: 20px;
     }
 </style>
 
@@ -123,10 +138,10 @@
     const form = document.getElementById('modulForm');
     const modalTitle = document.getElementById('modalTitle');
     const formMethod = document.getElementById('formMethod');
-    
+
     // Route dasar dari Laravel
     const storeUrl = "{{ route('admin.modul.store') }}";
-    const updateUrlBase = "{{ url('admin/modul') }}"; // Base URL untuk update
+    const updateUrlBase = "{{ url('modul') }}"; // Base URL untuk update
 
     function openModal(mode, data = null) {
         // Reset form setiap kali modal dibuka
@@ -141,14 +156,14 @@
             // Gabungkan Base URL dengan ID Modul
             form.action = `${updateUrlBase}/${data.module_id}`;
             formMethod.value = 'PUT'; // Gunakan PUT untuk update
-            
+
             // Isi form dengan data yang dilempar dari button Edit
             document.getElementById('inputKodeModul').value = data.kode_modul || '';
             document.getElementById('inputJudul').value = data.judul || '';
             document.getElementById('inputSubCpmk').value = data.sub_cpmk || '';
             document.getElementById('inputDeskripsi').value = data.deskripsi || '';
         }
-        
+
         modal.style.display = 'block';
     }
 

@@ -1,21 +1,23 @@
 @extends('layouts.admin')
 
-@section('title', 'Mahasiswa')
+@section('title', 'Data Mahasiswa')
 
 @section('content')
 <div class="page-header">
     <div>
-        <p class="eyebrow text-green">Data</p>
-        <h1>Kelola Mahasiswa</h1>
+        <p class="eyebrow text-green">Kelas: {{ $kelas->nama_kelas }} ({{ $kelas->tahun_ajaran }})</p>
+        <h1>Daftar Mahasiswa</h1>
     </div>
-    <!-- Tombol Add memanggil fungsi JS openModal('create') -->
-    <button type="button" class="btn btn-primary" onclick="openModal('create')">+ Tambah Mahasiswa</button>
+    <div>
+        <a href="{{ route('admin.kelas.index') }}" class="btn btn-secondary">Kembali ke Kelas</a>
+        <button type="button" class="btn btn-primary" onclick="openModal('create')">+ Tambah Mahasiswa</button>
+    </div>
 </div>
 
 <div class="panel-card">
     <div class="panel-header">
-        <h3>Daftar Mahasiswa</h3>
-        <span class="pill neutral">{{ $items->count() }} item</span>
+        <h3>Mahasiswa Terdaftar</h3>
+        <span class="pill neutral">{{ $items->count() }} Orang</span>
     </div>
 
     <table class="data-table">
@@ -23,7 +25,6 @@
             <tr>
                 <th>Nama</th>
                 <th>Email</th>
-                <th>Kelas</th>
                 <th>Level</th>
                 <th>Aksi</th>
             </tr>
@@ -33,25 +34,30 @@
             <tr>
                 <td>{{ $item->nama }}</td>
                 <td>{{ $item->email }}</td>
-                <td>{{ $item->kelas?->nama_kelas ?? '-' }}</td>
                 <td>{{ $item->level }}</td>
                 <td class="action-cell">
-                    <!-- Tombol Edit memanggil fungsi JS dengan parameter data item -->
                     <button type="button" class="btn btn-small btn-secondary" 
-                            onclick="openModal('edit', {{ $item }})">Edit</button>
+                            data-item="{{ json_encode($item) }}"
+                            onclick="openModal('edit', JSON.parse(this.getAttribute('data-item')))">Edit</button>
+                    
                     <button type="button" class="btn btn-small btn-danger" 
-                            data-delete-url="{{ route('admin.mahasiswa.destroy', $item->user_id) }}" 
-                            data-delete-title="Hapus Mahasiswa">Hapus</button>
+                            onclick="deleteMahasiswa('{{ route('admin.mahasiswa.destroy', $item->user_id) }}')">Hapus</button>
                 </td>
             </tr>
             @empty
             <tr>
-                <td colspan="5" class="empty-state">Belum ada mahasiswa.</td>
+                <td colspan="4" class="empty-state">Belum ada mahasiswa di kelas ini.</td>
             </tr>
             @endforelse
         </tbody>
     </table>
 </div>
+
+<!-- Form Hapus -->
+<form id="deleteForm" method="POST" style="display: none;">
+    @csrf
+    @method('DELETE')
+</form>
 
 <!-- Modal Form Mahasiswa -->
 <div id="mahasiswaModal" class="modal-overlay" style="display: none;">
@@ -63,8 +69,10 @@
         
         <form id="mahasiswaForm" method="POST" action="" class="login-form" style="padding: 20px;">
             @csrf
-            <!-- Method spoofing untuk keperluan Edit (PUT) -->
             <input type="hidden" name="_method" id="formMethod" value="POST">
+            
+            <!-- Hidden input untuk menyambungkan dengan Kelas -->
+            <input type="hidden" name="kelas_id" value="{{ $kelas->kelas_id }}">
 
             <label class="field-group">
                 <span>Nama</span>
@@ -89,49 +97,41 @@
     </div>
 </div>
 
-<!-- CSS Modal Overlay -->
 <style>
     .modal-overlay {
         position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.5);
-        z-index: 1000;
+        background: rgba(0,0,0,0.5); z-index: 1000;
         display: flex; align-items: flex-start; justify-content: center;
         overflow-y: auto; padding: 20px;
     }
 </style>
 
-<!-- JavaScript untuk handle Modal -->
 <script>
     const modal = document.getElementById('mahasiswaModal');
     const form = document.getElementById('mahasiswaForm');
     const modalTitle = document.getElementById('modalTitle');
     const formMethod = document.getElementById('formMethod');
     
-    // Route dasar dari Laravel
     const storeUrl = "{{ route('admin.mahasiswa.store') }}";
-    const updateUrlBase = "{{ url('admin/mahasiswa') }}"; // Base URL untuk update tanpa ID
+    const updateUrlBase = "{{ url('mahasiswa') }}"; 
 
     function openModal(mode, data = null) {
-        // Reset form setiap kali modal dibuka (termasuk mengosongkan input password)
         form.reset();
 
         if (mode === 'create') {
-            modalTitle.innerText = 'Tambah Mahasiswa';
+            modalTitle.innerText = 'Tambah Mahasiswa Baru';
             form.action = storeUrl;
-            formMethod.value = 'POST'; // Gunakan POST untuk insert
-            document.getElementById('inputPassword').required = true; // Wajib diisi saat tambah baru
+            formMethod.value = 'POST';
+            document.getElementById('inputPassword').required = true;
             document.getElementById('inputPassword').placeholder = "Masukkan password";
         } else if (mode === 'edit' && data) {
             modalTitle.innerText = 'Edit Mahasiswa';
-            // Gabungkan Base URL dengan ID User
             form.action = `${updateUrlBase}/${data.user_id}`;
-            formMethod.value = 'PUT'; // Gunakan PUT untuk update
+            formMethod.value = 'PUT';
             
-            // Hapus atribut required pada password saat edit
             document.getElementById('inputPassword').required = false; 
-            document.getElementById('inputPassword').placeholder = "Kosongkan jika tidak ingin mengubah";
+            document.getElementById('inputPassword').placeholder = "Kosongkan jika tidak diubah";
             
-            // Isi form dengan data yang dilempar dari button Edit
             document.getElementById('inputNama').value = data.nama || '';
             document.getElementById('inputEmail').value = data.email || '';
         }
@@ -143,11 +143,16 @@
         modal.style.display = 'none';
     }
 
-    // Tutup modal jika user klik di luar kotak modal
-    window.onclick = function(event) {
-        if (event.target === modal) {
-            closeModal();
+    function deleteMahasiswa(url) {
+        if (confirm('Yakin ingin menghapus data Mahasiswa ini?')) {
+            const deleteForm = document.getElementById('deleteForm');
+            deleteForm.action = url;
+            deleteForm.submit();
         }
+    }
+
+    window.onclick = function(event) {
+        if (event.target === modal) { closeModal(); }
     }
 </script>
 @endsection

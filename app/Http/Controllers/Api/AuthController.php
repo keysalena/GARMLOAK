@@ -3,18 +3,17 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
     /**
-     * @group Autentikasi
-     * 
-     * Login User
-     * 
-     * Endpoint ini digunakan untuk login dan mendapatkan Bearer Token aplikasi mobile.
+     * Login Pengguna
+     *
+     * Endpoint ini digunakan untuk melakukan autentikasi mahasiswa atau admin menggunakan email dan password. 
+     * Respons akan mengembalikan Token Sanctum (Bearer) yang harus disertakan di endpoint lain.
      * 
      * @unauthenticated
      */
@@ -22,25 +21,50 @@ class AuthController extends Controller
     {
         $request->validate([
             'email' => 'required|email',
-            'password' => 'required',
+            'password' => 'required'
         ]);
 
         $user = User::where('email', $request->email)->first();
 
         if (!$user || !Hash::check($request->password, $user->password_hash)) {
             return response()->json([
-                'status' => 'error',
-                'message' => 'Email atau password salah.'
+                'success' => false,
+                'message' => 'Email atau Password salah!',
             ], 401);
         }
 
         $token = $user->createToken('mobile_token')->plainTextToken;
 
         return response()->json([
-            'status' => 'success',
-            'message' => 'Login berhasil',
-            'data' => $user,
-            'access_token' => $token
-        ]);
+            'success' => true,
+            'message' => 'Login berhasil!',
+            'data' => [
+                'user' => [
+                    'user_id' => $user->user_id,
+                    'nama' => $user->nama,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                    'level' => $user->level,
+                    'total_xp' => $user->total_xp,
+                ],
+                'token' => $token
+            ]
+        ], 200);
+    }
+
+    /**
+     * Logout Pengguna
+     *
+     * Endpoint ini digunakan untuk menghapus sesi/token pengguna yang sedang aktif (Revoke Token).
+     * Membutuhkan Bearer Token di header Authorization.
+     */
+    public function logout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Logout berhasil!'
+        ], 200);
     }
 }

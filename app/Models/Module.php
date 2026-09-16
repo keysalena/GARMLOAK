@@ -38,13 +38,13 @@ class Module extends Model
         return $this->hasOne(UserModuleProgress::class, 'module_id', 'module_id');
     }
 
+    public function questions()
+    {
+        return $this->hasMany(Question::class, 'module_id', 'module_id');
+    }
+
     public function arContents()
     {
         return $this->hasMany(ArContent::class, 'module_id', 'module_id');
-    }
-
-    public function challenges()
-    {
-        return $this->hasMany(Challenge::class, 'module_id', 'module_id');
     }
 }

@@ -1,48 +1,34 @@
 <?php
 
-use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\ActivityController;
-use App\Http\Controllers\Api\BadgeController;
-use App\Http\Controllers\Api\HomeController;
-use App\Http\Controllers\Api\LeaderboardController;
-use App\Http\Controllers\Api\ModuleController;
-use App\Http\Controllers\Api\ProfileController;
-use App\Http\Controllers\Api\QuestionAnswerController;
-use App\Http\Controllers\Api\UserController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ModuleController;
+use App\Http\Controllers\Api\ProgressController;
+use App\Http\Controllers\Api\ProfileController;
 
-// Route Publik (Tidak butuh token)
+// Route Public (Tidak perlu token)
 Route::post('/login', [AuthController::class, 'login']);
 
-// Route Terproteksi (Wajib kirim Bearer Token)
+// Route Protected (Wajib mengirimkan Bearer Token dari hasil Login)
 Route::middleware('auth:sanctum')->group(function () {
 
+    // Endpoint Logout
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/home', [\App\Http\Controllers\Api\HomeController::class, 'index']);
+
     Route::get('/modules', [ModuleController::class, 'index']);
-    Route::get('/modules/{module_id}', [ModuleController::class, 'show']);
-    Route::get('/modules/{module_id}/ar', [ModuleController::class, 'arList']);
-    Route::get('/modules/{module_id}/progress-summary', [ModuleController::class, 'progressSummary']);
-    Route::get('/modules/{module_id}/challenges', [ModuleController::class, 'challengeList']);
-    Route::get('/challenges/{challenge_id}/questions', [ModuleController::class, 'questionList']);
-    Route::post('/questions/{question_id}/answer', [QuestionAnswerController::class, 'submit']);
-    Route::get('/materi/{materi_id}', [ModuleController::class, 'detail']);
-    Route::post('/materi/{materi_id}/complete', [ModuleController::class, 'complete']);
-    Route::post('/ar/{ar_id}/complete', [ModuleController::class, 'completeAr']);
-    Route::get('/profile', [ProfileController::class, 'index']);
-    Route::get('/user', [UserController::class, 'profile']);
-    Route::get('/badges', [BadgeController::class, 'index']);
-    Route::get('/leaderboard', [LeaderboardController::class, 'index']);
-    Route::get('/activity/summary', [ActivityController::class, 'summary']);
-    Route::post('/activity/log-time', [ActivityController::class, 'logTime']);
-    Route::get('/home', [HomeController::class, 'index']);
-    /**
-     * @group Autentikasi
-     * @authenticated
-     * 
-     * Logout User
-     * 
-     * Menghapus token sesi saat ini agar tidak bisa digunakan lagi.
-     */    Route::post('/logout', function (\Illuminate\Http\Request $request) {
-        $request->user()->currentAccessToken()->delete();
-        return response()->json(['status' => 'success', 'message' => 'Logout berhasil']);
+    Route::get('/modules/{id}', [ModuleController::class, 'show']);
+
+    Route::post('/materi/{materi_id}/complete', [ProgressController::class, 'completeMateri']);
+
+    Route::get('/profile', [ProfileController::class, 'getProfile']);
+    Route::get('/progress', [ProfileController::class, 'getProgress']);
+    // Endpoint untuk mendapatkan data profil user yang sedang login
+    Route::get('/user/profile', function (Request $request) {
+        return response()->json([
+            'success' => true,
+            'data' => $request->user()
+        ]);
     });
 });

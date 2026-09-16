@@ -41,8 +41,14 @@ return new class extends Migration
             $table->id('materi_id');
             $table->foreignId('module_id')->constrained('modules', 'module_id')->cascadeOnDelete();
             $table->string('judul', 150);
-            $table->enum('tipe', ['teks', 'video', 'pdf', 'kuis_singkat'])->default('teks');
+            $table->enum('tipe', ['teks', 'video', 'pdf', 'pendahuluan'])->default('teks');
+
+            // Kolom baru untuk menyimpan isi materi berupa teks panjang (artikel/WYSIWYG)
+            $table->longText('konten_teks')->nullable();
+
+            // Kolom ini tetap digunakan untuk menyimpan link YouTube, Google Drive, atau path file PDF/Video
             $table->string('konten_url', 255)->nullable();
+
             $table->integer('urutan');
             $table->timestamp('deleted_at')->nullable();
         });
@@ -58,17 +64,10 @@ return new class extends Migration
             $table->timestamp('deleted_at')->nullable();
         });
 
-        Schema::create('challenges', function (Blueprint $table) {
-            $table->id('challenge_id');
-            $table->foreignId('module_id')->constrained('modules', 'module_id')->cascadeOnDelete();
-            $table->string('judul', 150);
-            $table->integer('jumlah_soal')->default(0);
-            $table->timestamp('deleted_at')->nullable();
-        });
-
         Schema::create('questions', function (Blueprint $table) {
             $table->id('question_id');
-            $table->foreignId('challenge_id')->constrained('challenges', 'challenge_id')->cascadeOnDelete();
+            // Langsung relasi ke modules
+            $table->foreignId('module_id')->constrained('modules', 'module_id')->cascadeOnDelete(); 
             $table->text('pertanyaan');
             $table->text('penjelasan')->nullable();
             $table->integer('urutan');

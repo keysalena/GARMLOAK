@@ -8,7 +8,6 @@
         <p class="eyebrow text-green">Latihan</p>
         <h1>Kelola Challenge</h1>
     </div>
-    <!-- Tombol Add memanggil fungsi JS openModal('create') -->
     <button type="button" class="btn btn-primary" onclick="openModal('create')">+ Tambah Challenge</button>
 </div>
 
@@ -34,12 +33,14 @@
                 <td>{{ $item->module?->judul ?? '-' }}</td>
                 <td>{{ $item->jumlah_soal }}</td>
                 <td class="action-cell">
-                    <!-- Tombol Edit memanggil fungsi JS dengan data item -->
+                    <a href="{{ route('admin.challenge.questions', $item->challenge_id) }}" class="btn btn-small btn-primary">Kelola Soal</a>
+
                     <button type="button" class="btn btn-small btn-secondary" 
-                            onclick="openModal('edit', {{ $item }})">Edit</button>
+                        data-item="{{ json_encode($item) }}"
+                        onclick="openModal('edit', JSON.parse(this.getAttribute('data-item')))">Edit</button>
+                    
                     <button type="button" class="btn btn-small btn-danger" 
-                            data-delete-url="{{ route('admin.challenge.destroy', $item->challenge_id) }}" 
-                            data-delete-title="Hapus Challenge">Hapus</button>
+                        onclick="deleteChallenge('{{ route('admin.challenge.destroy', $item->challenge_id) }}')">Hapus</button>
                 </td>
             </tr>
             @empty
@@ -51,7 +52,11 @@
     </table>
 </div>
 
-<!-- Modal Form Challenge -->
+<form id="deleteForm" method="POST" style="display: none;">
+    @csrf
+    @method('DELETE')
+</form>
+
 <div id="challengeModal" class="modal-overlay" style="display: none;">
     <div class="modal-content panel-card" style="max-width: 500px; margin: 5% auto;">
         <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
@@ -61,7 +66,6 @@
         
         <form id="challengeForm" method="POST" action="" class="login-form" style="padding: 20px;">
             @csrf
-            <!-- Method spoofing untuk keperluan Edit (PUT) -->
             <input type="hidden" name="_method" id="formMethod" value="POST">
 
             <label class="field-group">
@@ -71,7 +75,7 @@
 
             <label class="field-group">
                 <span>Modul</span>
-                <select name="module_id" id="inputModule">
+                <select name="module_id" id="inputModule" required>
                     <option value="" disabled selected>Pilih Modul</option>
                     @foreach ($modules as $module)
                     <option value="{{ $module->module_id }}">{{ $module->judul }}</option>
@@ -87,43 +91,36 @@
     </div>
 </div>
 
-<!-- CSS Modal Overlay -->
 <style>
     .modal-overlay {
         position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.5);
-        z-index: 1000;
+        background: rgba(0,0,0,0.5); z-index: 1000;
         display: flex; align-items: flex-start; justify-content: center;
         overflow-y: auto; padding: 20px;
     }
 </style>
 
-<!-- JavaScript untuk handle Modal -->
 <script>
     const modal = document.getElementById('challengeModal');
     const form = document.getElementById('challengeForm');
     const modalTitle = document.getElementById('modalTitle');
     const formMethod = document.getElementById('formMethod');
     
-    // Route dasar dari Laravel
     const storeUrl = "{{ route('admin.challenge.store') }}";
-    const updateUrlBase = "{{ url('admin/challenge') }}"; // Base URL untuk update tanpa ID
+    const updateUrlBase = "{{ url('challenge') }}";
 
     function openModal(mode, data = null) {
-        // Reset form setiap kali modal dibuka
         form.reset();
 
         if (mode === 'create') {
             modalTitle.innerText = 'Tambah Challenge';
             form.action = storeUrl;
-            formMethod.value = 'POST'; // Gunakan POST untuk Tambah
+            formMethod.value = 'POST';
         } else if (mode === 'edit' && data) {
             modalTitle.innerText = 'Edit Challenge';
-            // Gabungkan Base URL dengan ID Challenge
             form.action = `${updateUrlBase}/${data.challenge_id}`;
-            formMethod.value = 'PUT'; // Gunakan PUT untuk Edit
+            formMethod.value = 'PUT';
             
-            // Isi form dengan data yang dilempar
             document.getElementById('inputJudul').value = data.judul || '';
             document.getElementById('inputModule').value = data.module_id || '';
         }
@@ -135,7 +132,14 @@
         modal.style.display = 'none';
     }
 
-    // Tutup modal jika user klik di luar kotak modal
+    function deleteChallenge(url) {
+        if (confirm('Apakah Anda yakin ingin menghapus Challenge ini beserta semua soal di dalamnya?')) {
+            const deleteForm = document.getElementById('deleteForm');
+            deleteForm.action = url;
+            deleteForm.submit();
+        }
+    }
+
     window.onclick = function(event) {
         if (event.target === modal) {
             closeModal();

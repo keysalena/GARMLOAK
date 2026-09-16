@@ -20,6 +20,7 @@ class Materi extends Model
         'judul',
         'tipe',
         'konten_url',
+        'konten_teks',
         'urutan',
     ];
 

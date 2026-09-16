@@ -25,7 +25,12 @@ class QuestionOption extends Model
         'is_correct' => 'boolean',
         'deleted_at' => 'datetime',
     ];
-
+    
+    protected $hidden = [
+        'is_correct',
+        'created_at',
+        'updated_at'
+    ];
     public function question()
     {
         return $this->belongsTo(Question::class, 'question_id', 'question_id');

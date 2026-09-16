@@ -28,4 +28,8 @@ class Kelas extends Model
     {
         return $this->hasMany(User::class, 'kelas_id', 'kelas_id');
     }
+    public function mahasiswa()
+    {
+        return $this->hasMany(User::class, 'kelas_id', 'kelas_id')->where('role', 'mahasiswa');
+    }
 }
