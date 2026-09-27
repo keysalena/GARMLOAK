@@ -5,30 +5,40 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ProgressController extends Controller
 {
-    /**
-     * Menyelesaikan Materi dan Mendapatkan XP
-     */
     public function completeMateri(Request $request, $materi_id)
     {
         $user = $request->user();
         
-        // ---------------------------------------------------------
-        // PRO TIP: Di sistem produksi nyata, Anda harus mengecek 
-        // tabel "user_progress" di database untuk memastikan user 
-        // belum pernah menyelesaikan materi ini, agar mereka tidak 
-        // bisa spam klik tombol "Selesai" berkali-kali untuk farming XP.
-        // ---------------------------------------------------------
+        // 1. CEK KEAMANAN: Apakah user sudah pernah menyelesaikan materi ini?
+        $isCompleted = DB::table('user_progress')
+            ->where('user_id', $user->user_id) // Sesuaikan nama Primary Key user Anda (id / user_id)
+            ->where('materi_id', $materi_id)
+            ->exists();
 
-        $xpGained = 15; // Jumlah XP yang didapat per materi (bisa disesuaikan)
-        
-        // Tambahkan XP ke total XP user
+        if ($isCompleted) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda sudah mendapatkan XP dari materi ini.'
+            ], 400); // 400 Bad Request
+        }
+
+        // 2. REKAM PROGRES: Kunci materi agar tidak bisa diklaim ulang
+        DB::table('user_progress')->insert([
+            'user_id' => $user->user_id,
+            'materi_id' => $materi_id,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // 3. TAMBAHKAN XP
+        $xpGained = 15; 
         $user->total_xp += $xpGained;
 
-        // Logika Leveling: Target XP = Level Saat Ini * 500
-        // Contoh: Level 1 (0 - 499 XP), Level 2 (500 - 999 XP), dst.
+        // 4. LOGIKA LEVELING
         $kalkulasiLevelBaru = floor($user->total_xp / 500) + 1;
         
         $isLevelUp = false;
@@ -37,7 +47,6 @@ class ProgressController extends Controller
             $isLevelUp = true;
         }
 
-        // Simpan perubahan ke database
         $user->save();
 
         return response()->json([

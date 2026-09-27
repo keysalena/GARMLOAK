@@ -2,6 +2,15 @@
 
 @section('title', 'Soal Kuis Modul')
 
+@section('breadcrumb')
+<li style="color: #adb5bd; font-size: 12px;">/</li>
+<li>
+    <a href="{{ route('admin.modul.index') }}" style="color: #6c757d; text-decoration: none; transition: color 0.2s;">Kelola Modul</a>
+</li>
+<li style="color: #adb5bd; font-size: 12px;">/</li>
+<li style="color: #2e7d32; font-weight: 600;" aria-current="page">Kelola Kuis</li>
+@endsection
+
 @section('content')
 <div class="page-header">
     <div>
@@ -15,7 +24,14 @@
         <button type="button" class="btn btn-primary" onclick="openModal('create')">+ Tambah Soal</button>
     </div>
 </div>
-
+@if (session('success'))
+<div style="padding: 16px; background-color: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;">
+    <div>
+        <strong>✔ Berhasil!</strong> {{ session('success') }}
+    </div>
+    <button type="button" onclick="this.parentElement.style.display='none';" style="background: transparent; border: none; font-size: 1.2rem; color: #2e7d32; cursor: pointer;">&times;</button>
+</div>
+@endif
 <div class="panel-card">
     <div class="panel-header">
         <h3>Daftar Pertanyaan</h3>
@@ -41,12 +57,28 @@
                 <td class="action-cell">
                     <a href="{{ route('admin.questions.options', $item->question_id) }}" class="btn btn-small btn-primary">Opsi Jawaban</a>
 
-                    <button type="button" class="btn btn-small btn-secondary"
+                    <!-- Tombol Edit (Ikon Bulat Abu-abu) -->
+                    <button type="button" title="Edit Pertanyaan"
+                        style="background: transparent; border: 1px solid #d1d5db; border-radius: 50%; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #4b5563; transition: all 0.2s;"
+                        onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='transparent'"
                         data-item="{{ json_encode($item) }}"
-                        onclick="openModal('edit', JSON.parse(this.getAttribute('data-item')))">Edit</button>
+                        onclick="openModal('edit', JSON.parse(this.getAttribute('data-item')))">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </button>
 
-                    <button type="button" class="btn btn-small btn-danger"
-                        onclick="deleteQuestion('{{ route('admin.questions.destroy', $item->question_id) }}')">Hapus</button>
+                    <!-- Tombol Hapus (Ikon Bulat Merah) -->
+                    <button type="button" title="Hapus Pertanyaan"
+                        style="background: #fee2e2; border: 1px solid #fecaca; border-radius: 50%; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #ef4444; transition: all 0.2s;"
+                        onmouseover="this.style.background='#fecaca'" onmouseout="this.style.background='#fee2e2'"
+                        onclick="confirmSingleDelete('{{ route('admin.questions.destroy', $item->question_id) }}', '{{$item->pertanyaan }}')">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                    </button>
                 </td>
             </tr>
             @empty
@@ -58,10 +90,30 @@
     </table>
 </div>
 
-<form id="deleteForm" method="POST" style="display: none;">
+<!-- Form Hapus Satuan (Tersembunyi) -->
+<form id="singleDeleteForm" method="POST" action="" style="display: none;">
     @csrf
     @method('DELETE')
 </form>
+
+<!-- Modal Konfirmasi Hapus Satuan -->
+<div id="singleDeleteModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content panel-card" style="max-width: 400px; margin: 10% auto; text-align: center; padding: 30px 20px;">
+        <div style="margin-bottom: 20px;">
+            <div style="background-color: #ffebee; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;">
+                <span style="color: #c62828; font-size: 28px; font-weight: bold;">!</span>
+            </div>
+            <h3 style="margin-bottom: 10px; color: #333;">Konfirmasi Hapus</h3>
+            <p style="color: #6c757d; font-size: 14px; line-height: 1.5;">
+                Apakah Anda yakin ingin menghapus pertanyaan <strong id="singleDeleteTitleText" style="color: #c62828;"></strong>?<br>Tindakan ini tidak dapat dibatalkan.
+            </p>
+        </div>
+        <div style="display: flex; gap: 10px; justify-content: center;">
+            <button type="button" class="btn btn-secondary" onclick="closeSingleDeleteModal()">Batal</button>
+            <button type="button" class="btn btn-danger" onclick="submitSingleDelete(this)">Ya, Hapus</button>
+        </div>
+    </div>
+</div>
 
 <div id="questionModal" class="modal-overlay" style="display: none;">
     <div class="modal-content panel-card" style="max-width: 500px; margin: 5% auto;">
@@ -88,7 +140,7 @@
             </label>
 
             <div class="action-cell" style="margin-top: 20px;">
-                <button type="submit" class="btn btn-primary">Simpan</button>
+                <button type="submit" class="btn btn-primary" onclick="setLoading(this)">Simpan</button>
                 <button type="button" class="btn btn-secondary" onclick="closeModal()">Batal</button>
             </div>
         </form>
@@ -146,18 +198,40 @@
         modal.style.display = 'none';
     }
 
-    function deleteQuestion(url) {
-        if (confirm('Apakah Anda yakin ingin menghapus Soal ini?')) {
-            const deleteForm = document.getElementById('deleteForm');
-            deleteForm.action = url;
-            deleteForm.submit();
-        }
+    function setLoading(button) {
+        button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Menyimpan...';
+
+        setTimeout(() => {
+            button.disabled = true;
+        }, 10);
+    }
+    const singleDeleteModal = document.getElementById('singleDeleteModal');
+    const singleDeleteForm = document.getElementById('singleDeleteForm');
+    const singleDeleteTitleText = document.getElementById('singleDeleteTitleText');
+
+    function confirmSingleDelete(url, namaKelas) {
+        // Set URL tujuan form hapus
+        singleDeleteForm.action = url;
+        // Tampilkan nama kelas di teks modal
+        singleDeleteTitleText.innerText = namaKelas;
+        // Buka modal
+        singleDeleteModal.style.display = 'block';
     }
 
+    function closeSingleDeleteModal() {
+        singleDeleteModal.style.display = 'none';
+    }
+
+    function submitSingleDelete(button) {
+        button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Menghapus...';
+        button.disabled = true;
+        button.previousElementSibling.disabled = true; // Nonaktifkan tombol Batal
+        singleDeleteForm.submit();
+    }
+    // --- TUTUP MODAL JIKA KLIK AREA LUAR ---
     window.onclick = function(event) {
-        if (event.target === modal) {
-            closeModal();
-        }
+        if (event.target === modal) closeModal();
+        if (event.target === singleDeleteModal) closeSingleDeleteModal();
     }
 </script>
 @endsection

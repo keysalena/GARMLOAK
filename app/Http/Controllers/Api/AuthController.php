@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Carbon\Carbon;
 
 class AuthController extends Controller
 {
@@ -43,6 +44,7 @@ class AuthController extends Controller
                     'user_id' => $user->user_id,
                     'nama' => $user->nama,
                     'email' => $user->email,
+                    'bergabung_sejak' => Carbon::parse($user->created_at)->translatedFormat('F Y'),
                     'role' => $user->role,
                     'level' => $user->level,
                     'total_xp' => $user->total_xp,

@@ -1,4 +1,4 @@
-<aside class="admin-sidebar">
+<aside class="admin-sidebar" id="adminSidebar">
     <div class="brand-box">
         <div class="brand-mark">D</div>
         <div>

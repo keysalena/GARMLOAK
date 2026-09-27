@@ -21,7 +21,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/modules/{id}', [ModuleController::class, 'show']);
 
     Route::post('/materi/{materi_id}/complete', [ProgressController::class, 'completeMateri']);
-
     Route::get('/profile', [ProfileController::class, 'getProfile']);
     Route::get('/progress', [ProfileController::class, 'getProgress']);
     // Endpoint untuk mendapatkan data profil user yang sedang login

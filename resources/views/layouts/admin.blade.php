@@ -39,22 +39,36 @@
         <div class="admin-content-wrap">
             <header class="topbar">
 
-                <!-- Tanggal Hari Ini (Pengganti Search) -->
-                <div class="topbar-left" style="color: var(--text-muted, #6b7280); font-size: 0.9rem; font-weight: 500;">
-                    {{ \Carbon\Carbon::now()->translatedFormat('l, d F Y') }}
+                <button type="button" class="sidebar-toggle" aria-label="Buka menu" aria-expanded="false" aria-controls="adminSidebar">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M4 6.5h16v2H4v-2Zm0 5h16v2H4v-2Zm0 5h16v2H4v-2Z" />
+                    </svg>
+                </button>
+
+                <!-- ========================================== -->
+                <!-- AREA KIRI: TANGGAL & BREADCRUMB -->
+                <!-- ========================================== -->
+                <div class="topbar-left" style="display: flex; flex-direction: column; gap: 4px;">
+                    <!-- Tanggal Hari Ini -->
+                    <div style="color: var(--text-muted, #6b7280); font-size: 0.85rem; font-weight: 500;">
+                        {{ \Carbon\Carbon::now()->translatedFormat('l, d F Y') }}
+                    </div>
+
+                    <!-- Breadcrumb Global -->
+                    @if (trim($__env->yieldContent('breadcrumb')))
+                    <nav aria-label="breadcrumb">
+                        <ol style="list-style: none; padding: 0; margin: 0; display: flex; align-items: center; gap: 8px; font-size: 13px;">
+                            <li>
+                                <a href="{{ route('admin.dashboard') }}" style="color: #6c757d; text-decoration: none; transition: color 0.2s;">Dashboard</a>
+                            </li>
+                            @yield('breadcrumb')
+                        </ol>
+                    </nav>
+                    @endif
                 </div>
+                <!-- ========================================== -->
 
                 <div class="topbar-actions">
-                    <button class="icon-btn" aria-label="Inbox">
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M5 7.5A2.5 2.5 0 0 1 7.5 5h9A2.5 2.5 0 0 1 19 7.5v8.9a2.6 2.6 0 0 1-2.6 2.6H7.6A2.6 2.6 0 0 1 5 16.4V7.5Zm2.5-.5a.5.5 0 0 0-.5.5v.6h10v-.6a.5.5 0 0 0-.5-.5h-9Zm-.5 4.1h10v5.8a1.1 1.1 0 0 1-1.1 1.1H7.6A1.1 1.1 0 0 1 6.5 17.1v-5.8Zm1.8 1.1v1.4h6.4v-1.4H8.3Z" />
-                        </svg>
-                    </button>
-                    <button class="icon-btn" aria-label="Notifications">
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M12 3.5a5.5 5.5 0 0 1 5.5 5.5v3.4l1.5 3.9h-14l1.5-3.9V9A5.5 5.5 0 0 1 12 3.5Zm0 17a2.2 2.2 0 0 1-2.2-2.2h4.4A2.2 2.2 0 0 1 12 20.5Z" />
-                        </svg>
-                    </button>
 
                     <!-- Data User Autentikasi (Dinamis) -->
                     @auth

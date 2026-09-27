@@ -14,8 +14,10 @@ endpoints:
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: ''
-      description: ''
+      title: 'Login Pengguna'
+      description: |-
+        Endpoint ini digunakan untuk melakukan autentikasi mahasiswa atau admin menggunakan email dan password.
+        Respons akan mengembalikan Token Sanctum (Bearer) yang harus disertakan di endpoint lain.
       authenticated: false
       deprecated: false
     headers:
@@ -42,7 +44,7 @@ endpoints:
         name: password
         description: ''
         required: true
-        example: '|]|{+-'
+        example: architecto
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -50,7 +52,7 @@ endpoints:
         deprecated: false
     cleanBodyParameters:
       email: gbailey@example.net
-      password: '|]|{+-'
+      password: architecto
     fileParameters: []
     responses: []
     responseFields: []
@@ -69,8 +71,10 @@ endpoints:
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: ''
-      description: ''
+      title: 'Logout Pengguna'
+      description: |-
+        Endpoint ini digunakan untuk menghapus sesi/token pengguna yang sedang aktif (Revoke Token).
+        Membutuhkan Bearer Token di header Authorization.
       authenticated: false
       deprecated: false
     headers:
@@ -93,14 +97,16 @@ endpoints:
     custom: []
     httpMethods:
       - GET
-    uri: api/user/profile
+    uri: api/home
     metadata:
       custom: []
       groupName: Endpoints
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: ''
+      title: |-
+        Data Beranda (Home)
+        Mengambil profil user dan modul terakhir yang sedang dipelajari.
       description: ''
       authenticated: false
       deprecated: false
@@ -140,7 +146,7 @@ endpoints:
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: ''
+      title: 'Menampilkan Daftar Semua Modul'
       description: ''
       authenticated: false
       deprecated: false
@@ -173,14 +179,14 @@ endpoints:
     custom: []
     httpMethods:
       - GET
-    uri: 'api/modules/{module}/materi'
+    uri: 'api/modules/{id}'
     metadata:
       custom: []
       groupName: Endpoints
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: ''
+      title: 'Menampilkan Detail Modul (Materi + Kuis)'
       description: ''
       authenticated: false
       deprecated: false
@@ -188,10 +194,10 @@ endpoints:
       Content-Type: application/json
       Accept: application/json
     urlParameters:
-      module:
+      id:
         custom: []
-        name: module
-        description: 'The module.'
+        name: id
+        description: 'The ID of the module.'
         required: true
         example: architecto
         type: string
@@ -200,111 +206,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      module: architecto
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"message":"Unauthenticated."}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          access-control-allow-origin: '*'
-        description: null
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - GET
-    uri: 'api/modules/{module_module_id}'
-    metadata:
-      custom: []
-      groupName: Endpoints
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: ''
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      module_module_id:
-        custom: []
-        name: module_module_id
-        description: 'The ID of the module module.'
-        required: true
-        example: 1
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      module_module_id: 1
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"message":"Unauthenticated."}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          access-control-allow-origin: '*'
-        description: null
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - GET
-    uri: 'api/materi/{materi_materi_id}'
-    metadata:
-      custom: []
-      groupName: Endpoints
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: ''
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      materi_materi_id:
-        custom: []
-        name: materi_materi_id
-        description: 'The ID of the materi materi.'
-        required: true
-        example: 16
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      materi_materi_id: 16
+      id: architecto
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters: []
@@ -329,14 +231,14 @@ endpoints:
     custom: []
     httpMethods:
       - POST
-    uri: 'api/materi/{materi_materi_id}/complete'
+    uri: 'api/materi/{materi_id}/complete'
     metadata:
       custom: []
       groupName: Endpoints
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: ''
+      title: 'Menyelesaikan Materi dan Mendapatkan XP'
       description: ''
       authenticated: false
       deprecated: false
@@ -344,157 +246,10 @@ endpoints:
       Content-Type: application/json
       Accept: application/json
     urlParameters:
-      materi_materi_id:
+      materi_id:
         custom: []
-        name: materi_materi_id
-        description: 'The ID of the materi materi.'
-        required: true
-        example: 16
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      materi_materi_id: 16
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses: []
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - GET
-    uri: 'api/modules/{module}/ar-contents'
-    metadata:
-      custom: []
-      groupName: Endpoints
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: ''
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      module:
-        custom: []
-        name: module
-        description: 'The module.'
-        required: true
-        example: 1
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      module: 1
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"message":"Unauthenticated."}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          access-control-allow-origin: '*'
-        description: null
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - GET
-    uri: 'api/modules/{module}/questions'
-    metadata:
-      custom: []
-      groupName: Endpoints
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: ''
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      module:
-        custom: []
-        name: module
-        description: 'The module.'
-        required: true
-        example: 1
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      module: 1
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"message":"Unauthenticated."}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          access-control-allow-origin: '*'
-        description: null
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - POST
-    uri: 'api/questions/{question}/answer'
-    metadata:
-      custom: []
-      groupName: Endpoints
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: ''
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      question:
-        custom: []
-        name: question
-        description: 'The question.'
+        name: materi_id
+        description: 'The ID of the materi.'
         required: true
         example: architecto
         type: string
@@ -503,23 +258,11 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      question: architecto
+      materi_id: architecto
     queryParameters: []
     cleanQueryParameters: []
-    bodyParameters:
-      option_id:
-        custom: []
-        name: option_id
-        description: ''
-        required: true
-        example: 16
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanBodyParameters:
-      option_id: 16
+    bodyParameters: []
+    cleanBodyParameters: []
     fileParameters: []
     responses: []
     responseFields: []
@@ -531,7 +274,87 @@ endpoints:
     custom: []
     httpMethods:
       - GET
-    uri: api/leaderboard
+    uri: api/profile
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Mengambil Data Profil Pengguna'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/progress
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Mengambil Data Statistik / Progress Belajar'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/user/profile
     metadata:
       custom: []
       groupName: Endpoints

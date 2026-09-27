@@ -66,6 +66,17 @@ class AdminDashboardController extends Controller
 
         return back()->with('success', 'Kelas berhasil dihapus.');
     }
+    public function bulkDestroyKelas(Request $request)
+    {
+        $request->validate([
+            'ids'   => 'required|array',
+            'ids.*' => 'exists:kelas,kelas_id'
+        ]);
+
+        Kelas::whereIn('kelas_id', $request->ids)->delete();
+
+        return back()->with('success', count($request->ids) . ' Kelas berhasil dihapus.');
+    }
 
     public function mahasiswaIndex(Kelas $kelas)
     {
@@ -129,6 +140,19 @@ class AdminDashboardController extends Controller
         $user->delete();
 
         return back()->with('success', 'Mahasiswa berhasil dihapus.');
+    }
+
+    public function bulkDestroy(Request $request)
+    {
+        $request->validate([
+            'ids'   => 'required|array',
+            'ids.*' => 'exists:users,user_id'
+        ]);
+
+        // Hapus menggunakan query Eloquent
+        User::whereIn('user_id', $request->ids)->delete();
+
+        return back()->with('success', count($request->ids) . ' Mahasiswa berhasil dihapus.');
     }
 
     public function modulIndex()
@@ -401,49 +425,38 @@ class AdminDashboardController extends Controller
         return view('admin.pages.options', compact('items', 'question'));
     }
 
-    public function storeOption(Request $request)
+    public function storeBulkOptions(Request $request)
     {
-        $data = $request->validate([
-            'question_id' => 'required|exists:questions,question_id',
-            'teks_opsi'   => 'required|string|max:255',
+        $request->validate([
+            'question_id'         => 'required|exists:questions,question_id',
+            'options'             => 'required|array|size:4', // Pastikan selalu ada 4 opsi
+            'options.*.teks_opsi' => 'required|string|max:255',
+            'is_correct'          => 'required|integer|between:0,3', // Index dari 0 sampai 3
         ]);
 
-        $isCorrect = $request->has('is_correct') ? true : false;
+        $correctIndex = (int) $request->is_correct;
 
-        // Jika opsi ini diset sebagai jawaban BENAR, maka ubah opsi lain di soal ini menjadi SALAH
-        if ($isCorrect) {
-            QuestionOption::where('question_id', $data['question_id'])->update(['is_correct' => false]);
+        foreach ($request->options as $index => $opt) {
+            $isCorrectStatus = ($index === $correctIndex);
+
+            // Jika opsi sudah ada ID-nya, lakukan Update
+            if (!empty($opt['option_id'])) {
+                QuestionOption::where('option_id', $opt['option_id'])->update([
+                    'teks_opsi'  => $opt['teks_opsi'],
+                    'is_correct' => $isCorrectStatus,
+                ]);
+            }
+            // Jika belum ada ID, buat data Create baru
+            else {
+                QuestionOption::create([
+                    'question_id' => $request->question_id,
+                    'teks_opsi'   => $opt['teks_opsi'],
+                    'is_correct'  => $isCorrectStatus,
+                ]);
+            }
         }
 
-        QuestionOption::create([
-            'question_id' => $data['question_id'],
-            'teks_opsi'   => $data['teks_opsi'],
-            'is_correct'  => $isCorrect,
-        ]);
-
-        return back()->with('success', 'Opsi jawaban berhasil ditambahkan.');
-    }
-
-    public function updateOption(Request $request, QuestionOption $option)
-    {
-        $data = $request->validate([
-            'question_id' => 'required|exists:questions,question_id',
-            'teks_opsi'   => 'required|string|max:255',
-        ]);
-
-        $isCorrect = $request->has('is_correct') ? true : false;
-
-        // Jika opsi ini diset sebagai jawaban BENAR, pastikan opsi lain menjadi SALAH
-        if ($isCorrect) {
-            QuestionOption::where('question_id', $data['question_id'])->update(['is_correct' => false]);
-        }
-
-        $option->update([
-            'teks_opsi'  => $data['teks_opsi'],
-            'is_correct' => $isCorrect,
-        ]);
-
-        return back()->with('success', 'Opsi jawaban berhasil diperbarui.');
+        return back()->with('success', '4 Opsi jawaban berhasil disimpan.');
     }
 
     public function destroyOption(QuestionOption $option)

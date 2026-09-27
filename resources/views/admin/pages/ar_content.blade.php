@@ -85,25 +85,13 @@
             </label>
 
             <div class="action-cell" style="margin-top: 20px;">
-                <button type="submit" class="btn btn-primary">Simpan</button>
+                <button type="submit" class="btn btn-primary" onclick="setLoading(this)">Simpan</button>
                 <button type="button" class="btn btn-secondary" onclick="closeModal()">Batal</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Tambahkan sedikit CSS untuk Modal Overlay dasar -->
-<style>
-    .modal-overlay {
-        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.5);
-        z-index: 1000;
-        display: flex; align-items: flex-start; justify-content: center;
-        overflow-y: auto; padding: 20px;
-    }
-</style>
-
-<!-- JavaScript untuk handle Modal -->
 <script>
     const modal = document.getElementById('arModal');
     const form = document.getElementById('arForm');
@@ -145,6 +133,13 @@
         if (event.target === modal) {
             closeModal();
         }
+    }
+        function setLoading(button) {
+        button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Menyimpan...';
+
+        setTimeout(() => {
+            button.disabled = true;
+        }, 10);
     }
 </script>
 @endsection

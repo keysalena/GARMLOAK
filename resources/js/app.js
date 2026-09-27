@@ -1,4 +1,44 @@
 document.addEventListener("DOMContentLoaded", function () {
+    const sidebar = document.getElementById("adminSidebar");
+    const sidebarToggle = document.querySelector(".sidebar-toggle");
+
+    if (sidebar && sidebarToggle) {
+        const closeSidebar = () => {
+            sidebar.classList.remove("is-open");
+            sidebarToggle.setAttribute("aria-expanded", "false");
+            sidebarToggle.setAttribute("aria-label", "Buka menu");
+            document.body.classList.remove("sidebar-open");
+        };
+
+        sidebarToggle.addEventListener("click", () => {
+            const isOpen = sidebar.classList.toggle("is-open");
+            sidebarToggle.setAttribute("aria-expanded", String(isOpen));
+            sidebarToggle.setAttribute(
+                "aria-label",
+                isOpen ? "Tutup menu" : "Buka menu",
+            );
+            document.body.classList.toggle("sidebar-open", isOpen);
+        });
+
+        sidebar.querySelectorAll(".nav-link").forEach((link) => {
+            link.addEventListener("click", closeSidebar);
+        });
+
+        document.addEventListener("click", (event) => {
+            if (
+                sidebar.classList.contains("is-open") &&
+                !sidebar.contains(event.target) &&
+                !sidebarToggle.contains(event.target)
+            ) {
+                closeSidebar();
+            }
+        });
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") closeSidebar();
+        });
+    }
+
     const modal = document.getElementById("globalModal");
     if (!modal) return;
 
@@ -116,4 +156,17 @@ document.addEventListener("DOMContentLoaded", function () {
             closeModal();
         }
     });
+    setTimeout(function() {
+        // Cari semua elemen yang punya class 'auto-close-alert'
+        const alerts = document.querySelectorAll('.auto-close-alert');
+        
+        alerts.forEach(function(alert) {
+            alert.style.opacity = '0';
+            
+            // Tunggu 500ms (0.5 detik) sampai animasi selesai, baru hilangkan elemen dari layout
+            setTimeout(function() {
+                alert.style.display = 'none';
+            }, 500); 
+        });
+    }, 5000);
 });

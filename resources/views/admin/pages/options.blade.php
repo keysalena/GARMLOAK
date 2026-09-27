@@ -2,6 +2,19 @@
 
 @section('title', 'Opsi Jawaban')
 
+@section('breadcrumb')
+    <li style="color: #adb5bd; font-size: 12px;">/</li>
+    <li>
+        <a href="{{ route('admin.modul.index') }}" style="color: #6c757d; text-decoration: none; transition: color 0.2s;">Kelola Modul</a>
+    </li>
+    <li style="color: #adb5bd; font-size: 12px;">/</li>
+    <li>
+        <a href="{{ route('admin.modul.questions', $question->module_id) }}" style="color: #6c757d; text-decoration: none; transition: color 0.2s;">Kelola Kuis</a>
+    </li>
+    <li style="color: #adb5bd; font-size: 12px;">/</li>
+    <li style="color: #2e7d32; font-weight: 600;" aria-current="page">Opsi Jawaban</li>
+@endsection
+
 @section('content')
 <div class="page-header">
     <div>
@@ -9,156 +22,78 @@
         <h1>Opsi untuk: "{{ \Illuminate\Support\Str::limit($question->pertanyaan, 50) }}"</h1>
     </div>
     <div>
-        <!-- Kembali ke daftar soal pada modul tersebut -->
         <a href="{{ route('admin.modul.questions', $question->module_id) }}" class="btn btn-secondary">Kembali ke Soal</a>
-
-        <!-- Sembunyikan tombol tambah jika opsi sudah 4 (atau biarkan jika ingin fleksibel) -->
-        @if($items->count() < 4)
-            <button type="button" class="btn btn-primary" onclick="openModal('create')">+ Tambah Opsi</button>
-            @endif
     </div>
 </div>
-
+@if (session('success'))
+<div style="padding: 16px; background-color: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;">
+    <div>
+        <strong>✔ Berhasil!</strong> {{ session('success') }}
+    </div>
+    <button type="button" onclick="this.parentElement.style.display='none';" style="background: transparent; border: none; font-size: 1.2rem; color: #2e7d32; cursor: pointer;">&times;</button>
+</div>
+@endif
 <div class="panel-card">
     <div class="panel-header">
-        <h3>Daftar Opsi Jawaban</h3>
-        <span class="pill neutral">{{ $items->count() }} / 4 Opsi</span>
+        <h3>Atur Opsi Jawaban (A, B, C, D)</h3>
+        <span class="pill neutral">Pilih salah satu radio button sebagai jawaban benar</span>
     </div>
 
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>Teks Opsi</th>
-                <th>Status Jawaban</th>
-                <th>Aksi</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse ($items as $item)
-            <tr>
-                <td>{{ $item->teks_opsi }}</td>
-                <td>
-                    @if($item->is_correct)
-                    <span class="badge text-green" style="background: #e8f5e9; padding: 5px 10px; border-radius: 4px;">✔ Jawaban Benar</span>
-                    @else
-                    <span class="badge text-gray">Salah</span>
-                    @endif
-                </td>
-                <td class="action-cell">
-                    <button type="button" class="btn btn-small btn-secondary"
-                        data-item="{{ json_encode($item) }}"
-                        onclick="openModal('edit', JSON.parse(this.getAttribute('data-item')))">Edit</button>
+    <!-- Pastikan action route mengarah ke controller storeBulkOptions yang baru dibuat -->
+    <form method="POST" action="{{ route('admin.options.storeBulk') }}" style="padding: 20px;">
+        @csrf
+        <input type="hidden" name="question_id" value="{{ $question->question_id }}">
 
-                    <button type="button" class="btn btn-small btn-danger"
-                        onclick="deleteOption('{{ route('admin.options.destroy', $item->option_id) }}')">Hapus</button>
-                </td>
-            </tr>
-            @empty
-            <tr>
-                <td colspan="3" class="empty-state">Belum ada opsi jawaban. Tambahkan minimal 4 opsi (A,B,C,D).</td>
-            </tr>
-            @endforelse
-        </tbody>
-    </table>
-</div>
+        {{-- Looping pasti 4 kali (A, B, C, D) --}}
+        @for ($i = 0; $i < 4; $i++)
+            @php
+            // Ambil data opsi yang sudah ada dari database berdasarkan index (jika ada)
+            $existing=$items->get($i);
+            @endphp
 
-<form id="deleteForm" method="POST" style="display: none;">
-    @csrf
-    @method('DELETE')
-</form>
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee;">
 
-<!-- Modal Form -->
-<div id="optionModal" class="modal-overlay" style="display: none;">
-    <div class="modal-content panel-card" style="max-width: 500px; margin: 5% auto;">
-        <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
-            <h3 id="modalTitle">Tambah Opsi</h3>
-            <button type="button" onclick="closeModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
-        </div>
+                <!-- Hidden Input untuk menyimpan ID jika sedang Edit -->
+                <input type="hidden" name="options[{{ $i }}][option_id]" value="{{ $existing ? $existing->option_id : '' }}">
 
-        <form id="optionForm" method="POST" action="" class="login-form" style="padding: 20px;">
-            @csrf
-            <input type="hidden" name="_method" id="formMethod" value="POST">
-            <input type="hidden" name="question_id" value="{{ $question->question_id }}">
+                <!-- Huruf A, B, C, D (Menggunakan fungsi chr untuk konversi ASCII) -->
+                <div style="font-weight: bold; font-size: 1.2rem; width: 30px; text-align: center;">
+                    {{ chr(65 + $i) }}.
+                </div>
 
-            <label class="field-group">
-                <span>Teks Pilihan Jawaban</span>
-                <input type="text" name="teks_opsi" id="inputTeksOpsi" required>
-            </label>
+                <!-- Input Teks Opsi -->
+                <label class="field-group" style="flex: 1; margin: 0;">
+                    <input type="text" name="options[{{ $i }}][teks_opsi]" value="{{ $existing ? $existing->teks_opsi : '' }}" placeholder="Masukkan teks opsi jawaban..." required>
+                </label>
 
-            <label style="display: flex; align-items: center; gap: 10px; margin-top: 15px; cursor: pointer;">
-                <input type="checkbox" name="is_correct" id="inputIsCorrect" value="1" style="width: 20px; height: 20px;">
-                <span style="font-weight: bold; color: #2e7d32;">Tandai sebagai Jawaban Benar</span>
-            </label>
-            <small style="color: gray; display: block; margin-top: 5px;">*Jika dicentang, opsi benar sebelumnya akan otomatis menjadi salah.</small>
-
-            <div class="action-cell" style="margin-top: 25px;">
-                <button type="submit" class="btn btn-primary">Simpan</button>
-                <button type="button" class="btn btn-secondary" onclick="closeModal()">Batal</button>
+                <!-- Radio Button penentu Jawaban Benar -->
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; white-space: nowrap; padding: 10px; border-radius: 8px; background: {{ ($existing && $existing->is_correct) ? '#e8f5e9' : '#f9f9f9' }};">
+                    <input type="radio" name="is_correct" value="{{ $i }}" {{ ($existing && $existing->is_correct) ? 'checked' : '' }} required style="width: 18px; height: 18px;">
+                    <span class="text-green" style="font-weight: bold;">Jawaban Benar</span>
+                </label>
             </div>
-        </form>
-    </div>
-</div>
+            @endfor
 
-<style>
-    .modal-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 1000;
-        display: flex;
-        align-items: flex-start;
-        justify-content: center;
-        overflow-y: auto;
-        padding: 20px;
-    }
-</style>
+            <div class="action-cell" style="margin-top: 20px; text-align: right;">
+                <button type="submit" class="btn btn-primary" onclick="setLoading(this)">Simpan Semua Opsi</button>
+            </div>
+    </form>
+</div>
 
 <script>
-    const modal = document.getElementById('optionModal');
-    const form = document.getElementById('optionForm');
-    const modalTitle = document.getElementById('modalTitle');
-    const formMethod = document.getElementById('formMethod');
-
-    const storeUrl = "{{ route('admin.options.store') }}";
-    const updateUrlBase = "{{ url('options') }}";
-
-    function openModal(mode, data = null) {
-        form.reset();
-
-        if (mode === 'create') {
-            modalTitle.innerText = 'Tambah Opsi Jawaban';
-            form.action = storeUrl;
-            formMethod.value = 'POST';
-        } else if (mode === 'edit' && data) {
-            modalTitle.innerText = 'Edit Opsi Jawaban';
-            form.action = `${updateUrlBase}/${data.option_id}`;
-            formMethod.value = 'PUT';
-
-            document.getElementById('inputTeksOpsi').value = data.teks_opsi || '';
-            document.getElementById('inputIsCorrect').checked = data.is_correct == 1;
-        }
-
-        modal.style.display = 'block';
-    }
-
-    function closeModal() {
-        modal.style.display = 'none';
-    }
-
-    function deleteOption(url) {
-        if (confirm('Apakah Anda yakin ingin menghapus opsi jawaban ini?')) {
-            const deleteForm = document.getElementById('deleteForm');
-            deleteForm.action = url;
-            deleteForm.submit();
-        }
-    }
-
-    window.onclick = function(event) {
-        if (event.target === modal) {
-            closeModal();
+    // Script loading untuk mencegah double submit (sesuai permintaan sebelumnya)
+    function setLoading(button) {
+        // Cek dulu apakah form sudah terisi (validasi required HTML5)
+        const form = button.closest('form');
+        if (form.checkValidity()) {
+            button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Menyimpan...';
+            setTimeout(() => {
+                button.disabled = true;
+                form.submit(); // Submit form manual karena button didisable
+            }, 10);
+        } else {
+            // Jika ada input yang kosong, biarkan browser menampilkan peringatan validasi
+            form.reportValidity();
         }
     }
 </script>

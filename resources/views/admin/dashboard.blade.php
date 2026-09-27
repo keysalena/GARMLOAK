@@ -12,7 +12,7 @@
     </div>
     
     <!-- Aksi Cepat -->
-    <div style="display: flex; gap: 10px;">
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
         <a href="{{ route('admin.modul.index') }}" class="btn btn-primary">
             + Tambah Modul
         </a>
@@ -25,62 +25,62 @@
     </div>
 </div>
 
-<!-- Statistik Metrik Utama (3 Kolom) -->
-<!-- Menggunakan repeat(3, 1fr) agar menjadi 3 kolom ke samping -->
-<div class="stats-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 30px;">
+<!-- Statistik Metrik Utama -->
+<!-- grid-template-columns diatur lewat class .stats-grid di app.css agar tetap responsive (otomatis jadi 2 kolom lalu 1 kolom saat layar mengecil) -->
+<!-- <div class="stats-grid" style="margin-top: 30px;"> -->
     
     <!-- Stat: Mahasiswa -->
-    <div class="stat-card accent-green">
+    <!-- <div class="stat-card accent-green">
         <div class="stat-top">
             <span class="stat-label">Total Mahasiswa</span>
             <span class="stat-arrow">👥</span>
         </div>
         <strong>{{ $totalMahasiswa }}</strong>
         <small>Terdaftar dalam sistem</small>
-    </div>
+    </div> -->
 
     <!-- Stat: Kelas -->
-    <div class="stat-card">
+    <!-- <div class="stat-card">
         <div class="stat-top">
             <span class="stat-label">Total Kelas</span>
             <span class="stat-arrow">🏫</span>
         </div>
         <strong>{{ $totalKelas }}</strong>
         <small>Data angkatan aktif</small>
-    </div>
+    </div> -->
 
     <!-- Stat: Modul -->
-    <div class="stat-card soft-card">
+    <!-- <div class="stat-card soft-card">
         <div class="stat-top">
             <span class="stat-label">Modul Belajar</span>
             <span class="stat-arrow muted">📚</span>
         </div>
         <strong>{{ $totalModul }}</strong>
         <small>Materi utama</small>
-    </div>
+    </div> -->
 
     <!-- Stat: Materi -->
-    <div class="stat-card">
+    <!-- <div class="stat-card">
         <div class="stat-top">
             <span class="stat-label">Konten Materi</span>
             <span class="stat-arrow">📄</span>
         </div>
         <strong>{{ $totalMateri }}</strong>
         <small>Teks, Video, & PDF</small>
-    </div>
+    </div> -->
 
     <!-- Stat: Konten AR -->
-    <div class="stat-card">
+    <!-- <div class="stat-card">
         <div class="stat-top">
             <span class="stat-label">Konten AR</span>
             <span class="stat-arrow">📱</span>
         </div>
         <strong>{{ $totalAr }}</strong>
         <small>Marker & 3D Model</small>
-    </div>
+    </div> -->
 
     <!-- Stat: Soal -->
-    <div class="stat-card">
+    <!-- <div class="stat-card">
         <div class="stat-top">
             <span class="stat-label">Soal Kuis</span>
             <span class="stat-arrow">🎯</span>
@@ -88,7 +88,7 @@
         <strong>{{ $totalQuestion }}</strong>
         <small>Soal evaluasi modul</small>
     </div>
-</div>
+</div> -->
 
 <!-- Kolom Konten Bawah (Informasi) -->
 <div class="content-grid" style="margin-top: 30px;">
