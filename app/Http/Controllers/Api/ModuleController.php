@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Module;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB; // Wajib ditambahkan untuk query builder
+use App\Models\Question;
 
 class ModuleController extends Controller
 {
@@ -21,7 +22,7 @@ class ModuleController extends Controller
 
         // Mapping data untuk menyisipkan perhitungan progres
         $modulesData = $modules->map(function ($module) use ($user) {
-            
+
             // 1. Hitung total materi reguler (MENGABAIKAN tipe pendahuluan)
             $totalMateri = DB::table('materi')
                 ->where('module_id', $module->module_id)
@@ -60,12 +61,13 @@ class ModuleController extends Controller
     /**
      * Menampilkan Detail Modul (Materi + Kuis)
      */
-    public function show($id)
+    public function show(Request $request, $id)
     {
-        // Mencari modul beserta relasi materi dan soal kuisnya
+        $user = $request->user();
+
         $module = Module::with([
-            'materi', 
-            'questions.options' 
+            'materi',
+            'questions.options'
         ])->find($id);
 
         if (!$module) {
@@ -75,13 +77,22 @@ class ModuleController extends Controller
             ], 404);
         }
 
-        // 1. Ambil SATU materi yang tipenya pendahuluan sebagai pendahuluan
         $pendahuluan = $module->materi->where('tipe', 'pendahuluan')->first();
-        
-        // 2. Ambil SISANYA (yang bukan pendahuluan) sebagai list materi biasa.
-        $materiList = $module->materi->where('tipe', '!=', 'pendahuluan')->values();
 
-        // Format data yang akan dikirimkan ke Flutter
+        // Pastikan urutan materi konsisten (sesuaikan kolom urutan jika ada)
+        $materiList = $module->materi
+            ->where('tipe', '!=', 'pendahuluan')
+            ->sortBy('urutan')
+            ->values();
+
+        // Ambil materi_id yang sudah diselesaikan user pada modul ini
+        $completedIds = DB::table('user_progress')
+            ->where('user_id', $user->user_id)
+            ->whereIn('materi_id', $module->materi->pluck('materi_id'))
+            ->pluck('materi_id')
+            ->map(fn($id) => (string) $id)
+            ->values();
+
         $data = [
             'module_id' => $module->module_id,
             'kode_modul' => $module->kode_modul,
@@ -90,7 +101,8 @@ class ModuleController extends Controller
             'urutan' => $module->urutan,
             'pendahuluan' => $pendahuluan,
             'materi' => $materiList,
-            'kuis' => $module->questions
+            'kuis' => $module->questions,
+            'completed_materi_ids' => $completedIds,
         ];
 
         return response()->json([
@@ -98,5 +110,113 @@ class ModuleController extends Controller
             'message' => 'Detail modul berhasil diambil',
             'data' => $data
         ], 200);
+    }
+    public function completeMateri(Request $request, $id)
+    {
+        $user = $request->user();
+
+        $already = DB::table('user_progress')
+            ->where('user_id', $user->user_id)
+            ->where('materi_id', $id)
+            ->exists();
+
+        if ($already) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Materi sudah diselesaikan',
+                'data' => ['xp_gained' => 0, 'is_level_up' => false, 'level' => $user->level ?? 1],
+            ]);
+        }
+
+        DB::table('user_progress')->insert([
+            'user_id' => $user->user_id,
+            'materi_id' => $id,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // Sesuaikan dengan logika XP/level yang sudah ada
+        $xpGained = 15;
+        // ... tambahkan XP ke user, hitung level ...
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Progres tersimpan',
+            'data' => [
+                'xp_gained' => $xpGained,
+                'is_level_up' => false, // isi dari hasil hitung level
+                'level' => $user->level ?? 1,
+            ],
+        ]);
+    }
+    public function submitKuis(Request $request, $moduleId)
+    {
+        // 1. Validasi input dari Flutter
+        $request->validate([
+            'jawaban' => 'required|array',
+        ]);
+
+        // Mengambil data user yang sedang login menggunakan token Sanctum
+        $user = $request->user();
+        $jawabanUser = $request->jawaban;
+
+        // 2. Ambil data soal kuis berdasarkan module_id
+        // Pastikan model 'Kuis' sesuai dengan nama model Anda di Laravel
+        $kuisList = Question::where('module_id', $moduleId)->orderBy('id')->get();
+
+        if ($kuisList->isEmpty()) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Kuis tidak ditemukan.'
+            ], 404);
+        }
+
+        // 3. Hitung Jawaban Benar
+        $benar = 0;
+        $totalSoal = $kuisList->count();
+
+        foreach ($kuisList as $index => $kuis) {
+            // Asumsi tabel kuis Anda memiliki kolom 'kunci_jawaban'
+            $kunci = strtolower($kuis->kunci_jawaban);
+            
+            // Cocokkan jawaban berdasarkan index (urutan soal)
+            $jawaban = isset($jawabanUser[$index]) ? strtolower($jawabanUser[$index]) : null;
+
+            if ($jawaban === $kunci) {
+                $benar++;
+            }
+        }
+
+        // 4. Hitung Skor (Skala 100)
+        $score = (int) round(($benar / $totalSoal) * 100);
+
+        // 5. Tambahkan XP (1 Skor = 1 XP)
+        $xpGained = $score;
+        $user->total_xp += $xpGained;
+        
+        // 6. Cek Logika Naik Level (Contoh: Kelipatan 500 XP = 1 Level)
+        $oldLevel = $user->level;
+        $newLevel = floor($user->total_xp / 500) + 1; 
+        
+        $isLevelUp = $newLevel > $oldLevel;
+        
+        if ($isLevelUp) {
+            $user->level = $newLevel;
+        }
+        
+        // 7. Simpan perubahan ke database
+        $user->save();
+
+        // 8. Kembalikan Response ke aplikasi Flutter
+        return response()->json([
+            'success' => true,
+            'message' => 'Kuis berhasil diselesaikan.',
+            'data' => [
+                'score'       => $score,
+                'xp_gained'   => $xpGained,
+                'is_level_up' => $isLevelUp,
+                'level'       => $user->level
+            ]
+        ]);
     }
 }

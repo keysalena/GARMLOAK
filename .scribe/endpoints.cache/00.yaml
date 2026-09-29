@@ -104,9 +104,7 @@ endpoints:
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: |-
-        Data Beranda (Home)
-        Mengambil profil user dan modul terakhir yang sedang dipelajari.
+      title: ''
       description: ''
       authenticated: false
       deprecated: false
@@ -146,7 +144,7 @@ endpoints:
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'Menampilkan Daftar Semua Modul'
+      title: 'Menampilkan Daftar Semua Modul beserta Progres'
       description: ''
       authenticated: false
       deprecated: false
@@ -231,14 +229,14 @@ endpoints:
     custom: []
     httpMethods:
       - POST
-    uri: 'api/materi/{materi_id}/complete'
+    uri: 'api/materi/{id}/complete'
     metadata:
       custom: []
       groupName: Endpoints
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'Menyelesaikan Materi dan Mendapatkan XP'
+      title: ''
       description: ''
       authenticated: false
       deprecated: false
@@ -246,9 +244,9 @@ endpoints:
       Content-Type: application/json
       Accept: application/json
     urlParameters:
-      materi_id:
+      id:
         custom: []
-        name: materi_id
+        name: id
         description: 'The ID of the materi.'
         required: true
         example: architecto
@@ -258,11 +256,66 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      materi_id: architecto
+      id: architecto
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters: []
     cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/modules/{moduleId}/submit-kuis'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      moduleId:
+        custom: []
+        name: moduleId
+        description: ''
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      moduleId: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      jawaban:
+        custom: []
+        name: jawaban
+        description: ''
+        required: true
+        example: []
+        type: object
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      jawaban: []
     fileParameters: []
     responses: []
     responseFields: []

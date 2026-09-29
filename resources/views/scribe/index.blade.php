@@ -26,7 +26,7 @@
             </style>
 
     <script>
-        var tryItOutBaseUrl = "http://localhost:8000";
+        var tryItOutBaseUrl = "https://garmloak.xo.je";
         var useCsrf = Boolean();
         var csrfUrl = "/sanctum/csrf-cookie";
     </script>
@@ -78,17 +78,19 @@
                                 <a href="#endpoints-POSTapi-logout">Logout Pengguna</a>
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="endpoints-GETapi-home">
-                                <a href="#endpoints-GETapi-home">Data Beranda (Home)
-Mengambil profil user dan modul terakhir yang sedang dipelajari.</a>
+                                <a href="#endpoints-GETapi-home">GET api/home</a>
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="endpoints-GETapi-modules">
-                                <a href="#endpoints-GETapi-modules">Menampilkan Daftar Semua Modul</a>
+                                <a href="#endpoints-GETapi-modules">Menampilkan Daftar Semua Modul beserta Progres</a>
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="endpoints-GETapi-modules--id-">
                                 <a href="#endpoints-GETapi-modules--id-">Menampilkan Detail Modul (Materi + Kuis)</a>
                             </li>
-                                                                                <li class="tocify-item level-2" data-unique="endpoints-POSTapi-materi--materi_id--complete">
-                                <a href="#endpoints-POSTapi-materi--materi_id--complete">Menyelesaikan Materi dan Mendapatkan XP</a>
+                                                                                <li class="tocify-item level-2" data-unique="endpoints-POSTapi-materi--id--complete">
+                                <a href="#endpoints-POSTapi-materi--id--complete">POST api/materi/{id}/complete</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="endpoints-POSTapi-modules--moduleId--submit-kuis">
+                                <a href="#endpoints-POSTapi-modules--moduleId--submit-kuis">POST api/modules/{moduleId}/submit-kuis</a>
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="endpoints-GETapi-profile">
                                 <a href="#endpoints-GETapi-profile">Mengambil Data Profil Pengguna</a>
@@ -110,7 +112,7 @@ Mengambil profil user dan modul terakhir yang sedang dipelajari.</a>
     </ul>
 
     <ul class="toc-footer" id="last-updated">
-        <li>Last updated: September 18, 2026</li>
+        <li>Last updated: September 29, 2026</li>
     </ul>
 </div>
 
@@ -119,7 +121,7 @@ Mengambil profil user dan modul terakhir yang sedang dipelajari.</a>
     <div class="content">
         <h1 id="introduction">Introduction</h1>
 <aside>
-    <strong>Base URL</strong>: <code>http://localhost:8000</code>
+    <strong>Base URL</strong>: <code>https://garmloak.xo.je</code>
 </aside>
 <pre><code>This documentation aims to provide all the information you need to work with our API.
 
@@ -149,7 +151,7 @@ Respons akan mengembalikan Token Sanctum (Bearer) yang harus disertakan di endpo
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://localhost:8000/api/login" \
+    "https://garmloak.xo.je/api/login" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -161,7 +163,7 @@ Respons akan mengembalikan Token Sanctum (Bearer) yang harus disertakan di endpo
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/login"
+    "https://garmloak.xo.je/api/login"
 );
 
 const headers = {
@@ -296,14 +298,14 @@ Membutuhkan Bearer Token di header Authorization.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://localhost:8000/api/logout" \
+    "https://garmloak.xo.je/api/logout" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/logout"
+    "https://garmloak.xo.je/api/logout"
 );
 
 const headers = {
@@ -394,8 +396,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                         </form>
 
-                    <h2 id="endpoints-GETapi-home">Data Beranda (Home)
-Mengambil profil user dan modul terakhir yang sedang dipelajari.</h2>
+                    <h2 id="endpoints-GETapi-home">GET api/home</h2>
 
 <p>
 </p>
@@ -408,14 +409,14 @@ Mengambil profil user dan modul terakhir yang sedang dipelajari.</h2>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost:8000/api/home" \
+    --get "https://garmloak.xo.je/api/home" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/home"
+    "https://garmloak.xo.je/api/home"
 );
 
 const headers = {
@@ -522,7 +523,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                         </form>
 
-                    <h2 id="endpoints-GETapi-modules">Menampilkan Daftar Semua Modul</h2>
+                    <h2 id="endpoints-GETapi-modules">Menampilkan Daftar Semua Modul beserta Progres</h2>
 
 <p>
 </p>
@@ -535,14 +536,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost:8000/api/modules" \
+    --get "https://garmloak.xo.je/api/modules" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/modules"
+    "https://garmloak.xo.je/api/modules"
 );
 
 const headers = {
@@ -662,14 +663,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost:8000/api/modules/architecto" \
+    --get "https://garmloak.xo.je/api/modules/architecto" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/modules/architecto"
+    "https://garmloak.xo.je/api/modules/architecto"
 );
 
 const headers = {
@@ -789,27 +790,27 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                     </form>
 
-                    <h2 id="endpoints-POSTapi-materi--materi_id--complete">Menyelesaikan Materi dan Mendapatkan XP</h2>
+                    <h2 id="endpoints-POSTapi-materi--id--complete">POST api/materi/{id}/complete</h2>
 
 <p>
 </p>
 
 
 
-<span id="example-requests-POSTapi-materi--materi_id--complete">
+<span id="example-requests-POSTapi-materi--id--complete">
 <blockquote>Example request:</blockquote>
 
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://localhost:8000/api/materi/architecto/complete" \
+    "https://garmloak.xo.je/api/materi/architecto/complete" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/materi/architecto/complete"
+    "https://garmloak.xo.je/api/materi/architecto/complete"
 );
 
 const headers = {
@@ -825,45 +826,45 @@ fetch(url, {
 
 </span>
 
-<span id="example-responses-POSTapi-materi--materi_id--complete">
+<span id="example-responses-POSTapi-materi--id--complete">
 </span>
-<span id="execution-results-POSTapi-materi--materi_id--complete" hidden>
+<span id="execution-results-POSTapi-materi--id--complete" hidden>
     <blockquote>Received response<span
-                id="execution-response-status-POSTapi-materi--materi_id--complete"></span>:
+                id="execution-response-status-POSTapi-materi--id--complete"></span>:
     </blockquote>
-    <pre class="json"><code id="execution-response-content-POSTapi-materi--materi_id--complete"
+    <pre class="json"><code id="execution-response-content-POSTapi-materi--id--complete"
       data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
 </span>
-<span id="execution-error-POSTapi-materi--materi_id--complete" hidden>
+<span id="execution-error-POSTapi-materi--id--complete" hidden>
     <blockquote>Request failed with error:</blockquote>
-    <pre><code id="execution-error-message-POSTapi-materi--materi_id--complete">
+    <pre><code id="execution-error-message-POSTapi-materi--id--complete">
 
 Tip: Check that you&#039;re properly connected to the network.
 If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
 You can check the Dev Tools console for debugging information.</code></pre>
 </span>
-<form id="form-POSTapi-materi--materi_id--complete" data-method="POST"
-      data-path="api/materi/{materi_id}/complete"
+<form id="form-POSTapi-materi--id--complete" data-method="POST"
+      data-path="api/materi/{id}/complete"
       data-authed="0"
       data-hasfiles="0"
       data-isarraybody="0"
       autocomplete="off"
-      onsubmit="event.preventDefault(); executeTryOut('POSTapi-materi--materi_id--complete', this);">
+      onsubmit="event.preventDefault(); executeTryOut('POSTapi-materi--id--complete', this);">
     <h3>
         Request&nbsp;&nbsp;&nbsp;
                     <button type="button"
                     style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-tryout-POSTapi-materi--materi_id--complete"
-                    onclick="tryItOut('POSTapi-materi--materi_id--complete');">Try it out ⚡
+                    id="btn-tryout-POSTapi-materi--id--complete"
+                    onclick="tryItOut('POSTapi-materi--id--complete');">Try it out ⚡
             </button>
             <button type="button"
                     style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-canceltryout-POSTapi-materi--materi_id--complete"
-                    onclick="cancelTryOut('POSTapi-materi--materi_id--complete');" hidden>Cancel 🛑
+                    id="btn-canceltryout-POSTapi-materi--id--complete"
+                    onclick="cancelTryOut('POSTapi-materi--id--complete');" hidden>Cancel 🛑
             </button>&nbsp;&nbsp;
             <button type="submit"
                     style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-executetryout-POSTapi-materi--materi_id--complete"
+                    id="btn-executetryout-POSTapi-materi--id--complete"
                     data-initial-text="Send Request 💥"
                     data-loading-text="⏱ Sending..."
                     hidden>Send Request 💥
@@ -871,7 +872,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </h3>
             <p>
             <small class="badge badge-black">POST</small>
-            <b><code>api/materi/{materi_id}/complete</code></b>
+            <b><code>api/materi/{id}/complete</code></b>
         </p>
                 <h4 class="fancy-heading-panel"><b>Headers</b></h4>
                                 <div style="padding-left: 28px; clear: unset;">
@@ -880,7 +881,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
  &nbsp;
                 <input type="text" style="display: none"
-                              name="Content-Type"                data-endpoint="POSTapi-materi--materi_id--complete"
+                              name="Content-Type"                data-endpoint="POSTapi-materi--id--complete"
                value="application/json"
                data-component="header">
     <br>
@@ -892,7 +893,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
  &nbsp;
                 <input type="text" style="display: none"
-                              name="Accept"                data-endpoint="POSTapi-materi--materi_id--complete"
+                              name="Accept"                data-endpoint="POSTapi-materi--id--complete"
                value="application/json"
                data-component="header">
     <br>
@@ -900,18 +901,163 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                         <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
                     <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>materi_id</code></b>&nbsp;&nbsp;
+                <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
 <small>string</small>&nbsp;
  &nbsp;
  &nbsp;
                 <input type="text" style="display: none"
-                              name="materi_id"                data-endpoint="POSTapi-materi--materi_id--complete"
+                              name="id"                data-endpoint="POSTapi-materi--id--complete"
                value="architecto"
                data-component="url">
     <br>
 <p>The ID of the materi. Example: <code>architecto</code></p>
             </div>
                     </form>
+
+                    <h2 id="endpoints-POSTapi-modules--moduleId--submit-kuis">POST api/modules/{moduleId}/submit-kuis</h2>
+
+<p>
+</p>
+
+
+
+<span id="example-requests-POSTapi-modules--moduleId--submit-kuis">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request POST \
+    "https://garmloak.xo.je/api/modules/architecto/submit-kuis" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json" \
+    --data "{
+    \"jawaban\": []
+}"
+</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "https://garmloak.xo.je/api/modules/architecto/submit-kuis"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+let body = {
+    "jawaban": []
+};
+
+fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-POSTapi-modules--moduleId--submit-kuis">
+</span>
+<span id="execution-results-POSTapi-modules--moduleId--submit-kuis" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-POSTapi-modules--moduleId--submit-kuis"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-POSTapi-modules--moduleId--submit-kuis"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-POSTapi-modules--moduleId--submit-kuis" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-POSTapi-modules--moduleId--submit-kuis">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-POSTapi-modules--moduleId--submit-kuis" data-method="POST"
+      data-path="api/modules/{moduleId}/submit-kuis"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('POSTapi-modules--moduleId--submit-kuis', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-POSTapi-modules--moduleId--submit-kuis"
+                    onclick="tryItOut('POSTapi-modules--moduleId--submit-kuis');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-POSTapi-modules--moduleId--submit-kuis"
+                    onclick="cancelTryOut('POSTapi-modules--moduleId--submit-kuis');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-POSTapi-modules--moduleId--submit-kuis"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-black">POST</small>
+            <b><code>api/modules/{moduleId}/submit-kuis</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="POSTapi-modules--moduleId--submit-kuis"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="POSTapi-modules--moduleId--submit-kuis"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>moduleId</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="moduleId"                data-endpoint="POSTapi-modules--moduleId--submit-kuis"
+               value="architecto"
+               data-component="url">
+    <br>
+<p>Example: <code>architecto</code></p>
+            </div>
+                            <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
+        <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>jawaban</code></b>&nbsp;&nbsp;
+<small>object</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="jawaban"                data-endpoint="POSTapi-modules--moduleId--submit-kuis"
+               value=""
+               data-component="body">
+    <br>
+
+        </div>
+        </form>
 
                     <h2 id="endpoints-GETapi-profile">Mengambil Data Profil Pengguna</h2>
 
@@ -926,14 +1072,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost:8000/api/profile" \
+    --get "https://garmloak.xo.je/api/profile" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/profile"
+    "https://garmloak.xo.je/api/profile"
 );
 
 const headers = {
@@ -1053,14 +1199,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost:8000/api/progress" \
+    --get "https://garmloak.xo.je/api/progress" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/progress"
+    "https://garmloak.xo.je/api/progress"
 );
 
 const headers = {
@@ -1180,14 +1326,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost:8000/api/user/profile" \
+    --get "https://garmloak.xo.je/api/user/profile" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/user/profile"
+    "https://garmloak.xo.je/api/user/profile"
 );
 
 const headers = {
