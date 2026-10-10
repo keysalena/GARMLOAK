@@ -30,7 +30,7 @@ class ProfileController extends Controller
                 'xp' => $user->total_xp ?? 0,
                 'xp_target' => ($user->level ?? 1) * 500,
                 'nama_kelas' => $user->kelas ? $user->kelas->nama_kelas : 'Belum ada kelas',
-                'bergabung_sejak' => $user->created_at->translatedFormat('d F Y')
+                'bergabung_sejak' => $user->created_at
             ]
         ], 200);
     }
