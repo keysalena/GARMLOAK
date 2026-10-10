@@ -42,13 +42,8 @@ return new class extends Migration
             $table->foreignId('module_id')->constrained('modules', 'module_id')->cascadeOnDelete();
             $table->string('judul', 150);
             $table->enum('tipe', ['teks', 'video', 'pdf', 'pendahuluan'])->default('teks');
-
-            // Kolom baru untuk menyimpan isi materi berupa teks panjang (artikel/WYSIWYG)
             $table->longText('konten_teks')->nullable();
-
-            // Kolom ini tetap digunakan untuk menyimpan link YouTube, Google Drive, atau path file PDF/Video
             $table->string('konten_url', 255)->nullable();
-
             $table->integer('urutan');
             $table->timestamp('deleted_at')->nullable();
         });
@@ -66,7 +61,6 @@ return new class extends Migration
 
         Schema::create('questions', function (Blueprint $table) {
             $table->id('question_id');
-            // Langsung relasi ke modules
             $table->foreignId('module_id')->constrained('modules', 'module_id')->cascadeOnDelete(); 
             $table->text('pertanyaan');
             $table->text('penjelasan')->nullable();
@@ -80,15 +74,6 @@ return new class extends Migration
             $table->foreignId('question_id')->constrained('questions', 'question_id')->cascadeOnDelete();
             $table->string('teks_opsi', 255);
             $table->boolean('is_correct')->default(false);
-            $table->timestamp('deleted_at')->nullable();
-        });
-
-        Schema::create('badges', function (Blueprint $table) {
-            $table->id('badge_id');
-            $table->string('nama', 100);
-            $table->string('deskripsi', 255)->nullable();
-            $table->string('icon_url', 255)->nullable();
-            $table->string('kriteria', 255)->nullable();
             $table->timestamp('deleted_at')->nullable();
         });
 
@@ -108,23 +93,13 @@ return new class extends Migration
             $table->foreign('level')->references('level_number')->on('levels');
         });
 
-        Schema::create('user_answers', function (Blueprint $table) {
-            $table->uuid('answer_id')->primary();
-            $table->foreignUuid('user_id')->constrained('users', 'user_id')->cascadeOnDelete();
-            $table->foreignId('question_id')->constrained('questions', 'question_id')->cascadeOnDelete();
-            $table->foreignId('option_id')->constrained('question_options', 'option_id');
-            $table->boolean('is_correct');
-            $table->integer('xp_didapat')->default(0);
-            $table->timestamp('dijawab_pada')->useCurrent();
-        });
-
-        Schema::create('user_material_progress', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+        // TABEL INI WAJIB DITAMBAHKAN KEMBALI KARENA DIPAKAI OLEH API ANDA (ModuleController)
+        Schema::create('user_progress', function (Blueprint $table) {
+            $table->id();
             $table->foreignUuid('user_id')->constrained('users', 'user_id')->cascadeOnDelete();
             $table->foreignId('materi_id')->constrained('materi', 'materi_id')->cascadeOnDelete();
-            $table->enum('status', ['belum', 'selesai'])->default('belum');
-            $table->timestamp('selesai_pada')->nullable();
-            $table->unique(['user_id', 'materi_id']);
+            $table->timestamps();
+            $table->unique(['user_id', 'materi_id']); // Mencegah duplikasi data materi yang sama
         });
 
         Schema::create('user_ar_progress', function (Blueprint $table) {
@@ -147,56 +122,12 @@ return new class extends Migration
             $table->unique(['user_id', 'module_id']);
         });
 
-        Schema::create('xp_transactions', function (Blueprint $table) {
-            $table->uuid('transaction_id')->primary();
-            $table->foreignUuid('user_id')->constrained('users', 'user_id')->cascadeOnDelete();
-            $table->enum('source_type', ['materi', 'ar_explore', 'challenge']);
-            $table->integer('source_id');
-            $table->integer('jumlah_xp');
-            $table->timestamp('created_at')->useCurrent();
-        });
-
-        Schema::create('user_badges', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->foreignUuid('user_id')->constrained('users', 'user_id')->cascadeOnDelete();
-            $table->foreignId('badge_id')->constrained('badges', 'badge_id')->cascadeOnDelete();
-            $table->timestamp('earned_at')->useCurrent();
-            $table->unique(['user_id', 'badge_id']);
-        });
-
-        Schema::create('daily_activity_log', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->foreignUuid('user_id')->constrained('users', 'user_id')->cascadeOnDelete();
-            $table->date('tanggal');
-            $table->integer('waktu_belajar_menit')->default(0);
-            $table->integer('ar_explore_count')->default(0);
-            $table->integer('challenge_count')->default(0);
-            $table->unique(['user_id', 'tanggal']);
-        });
-
-        Schema::create('recommendations', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->foreignUuid('user_id')->constrained('users', 'user_id')->cascadeOnDelete();
-            $table->foreignId('module_id')->nullable()->constrained('modules', 'module_id')->nullOnDelete();
-            $table->text('teks');
-            $table->timestamp('created_at')->useCurrent();
-            $table->boolean('is_read')->default(false);
-            $table->timestamp('deleted_at')->nullable();
-        });
-
         DB::table('levels')->insert([
             ['level_number' => 1, 'nama_level' => 'Pemula', 'xp_min' => 0, 'xp_max' => 199],
             ['level_number' => 2, 'nama_level' => 'Pembelajar', 'xp_min' => 200, 'xp_max' => 349],
             ['level_number' => 3, 'nama_level' => 'Penjelajah', 'xp_min' => 350, 'xp_max' => 499],
             ['level_number' => 4, 'nama_level' => 'Ahli', 'xp_min' => 500, 'xp_max' => 699],
             ['level_number' => 5, 'nama_level' => 'Master', 'xp_min' => 700, 'xp_max' => 999999],
-        ]);
-
-        DB::table('badges')->insert([
-            ['nama' => 'Computer Explorer', 'deskripsi' => 'Pelajari struktur komputer', 'icon_url' => null, 'kriteria' => 'Selesaikan Modul 1'],
-            ['nama' => 'Memory Master', 'deskripsi' => 'Selesaikan semua materi memori', 'icon_url' => null, 'kriteria' => 'Selesaikan Modul 2'],
-            ['nama' => 'System Solver', 'deskripsi' => 'Selesaikan 10 challenge', 'icon_url' => null, 'kriteria' => 'Total 10 challenge diselesaikan'],
-            ['nama' => 'CPU Engineer', 'deskripsi' => 'Selesaikan materi CPU dan pipeline', 'icon_url' => null, 'kriteria' => 'Selesaikan Modul 4'],
         ]);
 
         DB::table('modules')->insert([
@@ -212,19 +143,13 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('recommendations');
-        Schema::dropIfExists('daily_activity_log');
-        Schema::dropIfExists('user_badges');
-        Schema::dropIfExists('xp_transactions');
+        // Fungsi Down telah dibersihkan, hanya men-drop tabel yang benar-benar dibuat di fungsi up() dengan urutan terbalik.
         Schema::dropIfExists('user_module_progress');
         Schema::dropIfExists('user_ar_progress');
-        Schema::dropIfExists('user_material_progress');
-        Schema::dropIfExists('user_answers');
+        Schema::dropIfExists('user_progress');
         Schema::dropIfExists('users');
-        Schema::dropIfExists('badges');
         Schema::dropIfExists('question_options');
         Schema::dropIfExists('questions');
-        Schema::dropIfExists('challenges');
         Schema::dropIfExists('ar_content');
         Schema::dropIfExists('materi');
         Schema::dropIfExists('modules');
