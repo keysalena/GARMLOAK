@@ -93,24 +93,6 @@ return new class extends Migration
             $table->foreign('level')->references('level_number')->on('levels');
         });
 
-        // TABEL INI WAJIB DITAMBAHKAN KEMBALI KARENA DIPAKAI OLEH API ANDA (ModuleController)
-        Schema::create('user_progress', function (Blueprint $table) {
-            $table->id();
-            $table->foreignUuid('user_id')->constrained('users', 'user_id')->cascadeOnDelete();
-            $table->foreignId('materi_id')->constrained('materi', 'materi_id')->cascadeOnDelete();
-            $table->timestamps();
-            $table->unique(['user_id', 'materi_id']); // Mencegah duplikasi data materi yang sama
-        });
-
-        Schema::create('user_ar_progress', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->foreignUuid('user_id')->constrained('users', 'user_id')->cascadeOnDelete();
-            $table->foreignId('ar_id')->constrained('ar_content', 'ar_id')->cascadeOnDelete();
-            $table->enum('status', ['belum', 'selesai'])->default('belum');
-            $table->timestamp('selesai_pada')->nullable();
-            $table->unique(['user_id', 'ar_id']);
-        });
-
         Schema::create('user_module_progress', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('user_id')->constrained('users', 'user_id')->cascadeOnDelete();
@@ -145,8 +127,6 @@ return new class extends Migration
     {
         // Fungsi Down telah dibersihkan, hanya men-drop tabel yang benar-benar dibuat di fungsi up() dengan urutan terbalik.
         Schema::dropIfExists('user_module_progress');
-        Schema::dropIfExists('user_ar_progress');
-        Schema::dropIfExists('user_progress');
         Schema::dropIfExists('users');
         Schema::dropIfExists('question_options');
         Schema::dropIfExists('questions');
