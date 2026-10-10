@@ -28,6 +28,7 @@ class AuthController extends Controller
         ]);
 
         $user = User::where('email', $request->email)->first();
+        $user->loadMissing('kelas');
 
         if (!$user || !Hash::check($request->password, $user->password_hash)) {
             return response()->json([
@@ -47,6 +48,7 @@ class AuthController extends Controller
                     'nama' => $user->nama,
                     'email' => $user->email,
                     'bergabung_sejak' => Carbon::parse($user->created_at)->translatedFormat('F Y'),
+                    'nama_kelas' => $user->kelas ? $user->kelas->nama_kelas : 'Belum ada kelas',
                     'role' => $user->role,
                     'level' => $user->level,
                     'total_xp' => $user->total_xp,
