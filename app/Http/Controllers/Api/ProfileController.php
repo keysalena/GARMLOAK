@@ -17,7 +17,6 @@ class ProfileController extends Controller
     {
         $user = $request->user();
 
-        // Memuat data dari tabel kelas terkait
         $user->loadMissing('kelas');
 
         return response()->json([
@@ -30,7 +29,6 @@ class ProfileController extends Controller
                 'level' => $user->level ?? 1,
                 'xp' => $user->total_xp ?? 0,
                 'xp_target' => ($user->level ?? 1) * 500,
-                // Menambahkan nama kelas (atau teks default jika null)
                 'nama_kelas' => $user->kelas ? $user->kelas->nama_kelas : 'Belum ada kelas',
                 'bergabung_sejak' => $user->created_at->translatedFormat('d F Y')
             ]

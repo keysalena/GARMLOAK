@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use App\Models\Kelas;
 
 class User extends Authenticatable
 {
@@ -53,11 +54,5 @@ class User extends Authenticatable
     public function levelInfo()
     {
         return $this->belongsTo(Level::class, 'level', 'level_number');
-    }
-
-    public function badges()
-    {
-        return $this->belongsToMany(Badge::class, 'user_badges', 'user_id', 'badge_id')
-            ->withPivot('id', 'earned_at');
     }
 }
