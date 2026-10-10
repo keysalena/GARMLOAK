@@ -34,7 +34,7 @@ Route::middleware('auth:sanctum')->group(function () {
     //         'data' => $request->user()
     //     ]);
     // });
-    Route::post('/user/profile', [ProfileController::class, 'getProfile']);
+    Route::get('/user/profile', [ProfileController::class, 'getProfile']);
     Route::post('/user/profile/update', [ProfileController::class, 'updateProfile']);
     Route::post('/user/password/update', [ProfileController::class, 'updatePassword']);
     Route::post('/user/profile/avatar', [ProfileController::class, 'updateAvatar']);
