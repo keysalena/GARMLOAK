@@ -11,7 +11,13 @@ use Illuminate\Support\Facades\Hash;
 class ProfileController extends Controller
 {
     /**
-     * Mengambil Data Profil Pengguna
+     * Profil User yang Login
+     *
+     * Mengambil nama, email, avatar, dan nama kelas milik user pemilik token.
+     *
+     * @authenticated
+     *
+     * @group Profil
      */
     public function getProfile(Request $request)
     {
