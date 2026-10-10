@@ -82,7 +82,7 @@ return new class extends Migration
             $table->boolean('is_correct')->default(false);
             $table->timestamp('deleted_at')->nullable();
         });
-        
+
         Schema::create('users', function (Blueprint $table) {
             $table->uuid('user_id')->primary();
             $table->foreignId('kelas_id')->nullable()->constrained('kelas', 'kelas_id');
@@ -140,16 +140,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('recommendations');
-        Schema::dropIfExists('daily_activity_log');
-        Schema::dropIfExists('user_badges');
-        Schema::dropIfExists('xp_transactions');
         Schema::dropIfExists('user_module_progress');
         Schema::dropIfExists('user_ar_progress');
-        Schema::dropIfExists('user_material_progress');
-        Schema::dropIfExists('user_answers');
         Schema::dropIfExists('users');
-        Schema::dropIfExists('badges');
         Schema::dropIfExists('question_options');
         Schema::dropIfExists('questions');
         Schema::dropIfExists('challenges');
