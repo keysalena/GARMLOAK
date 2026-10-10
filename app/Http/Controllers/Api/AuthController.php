@@ -28,14 +28,17 @@ class AuthController extends Controller
         ]);
 
         $user = User::where('email', $request->email)->first();
-        $user->loadMissing('kelas');
 
+        // 1. Validasi keberadaan user dan kecocokan password terlebih dahulu
         if (!$user || !Hash::check($request->password, $user->password_hash)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Email atau Password salah!',
             ], 401);
         }
+
+        // 2. Jika validasi sukses, baru panggil relasinya
+        $user->loadMissing('kelas');
 
         $token = $user->createToken('mobile_token')->plainTextToken;
 
@@ -47,7 +50,8 @@ class AuthController extends Controller
                     'user_id' => $user->user_id,
                     'nama' => $user->nama,
                     'email' => $user->email,
-                    'bergabung_sejak' => Carbon::parse($user->created_at)->translatedFormat('F Y'),
+                    // Gunakan backslash (\Carbon\Carbon) jika belum melakukan import class di atas
+                    'bergabung_sejak' => \Carbon\Carbon::parse($user->created_at)->translatedFormat('F Y'),
                     'nama_kelas' => $user->kelas ? $user->kelas->nama_kelas : 'Belum ada kelas',
                     'role' => $user->role,
                     'level' => $user->level,
