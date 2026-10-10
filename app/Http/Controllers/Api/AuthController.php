@@ -119,6 +119,20 @@ class AuthController extends Controller
             'data' => $kelas
         ], 200);
     }
+    public function getKelasById($id)
+    {
+        $kelas = Kelas::select('kelas_id', 'nama_kelas', 'tahun_ajaran')->where('kelas_id', $id)->first();
+        if (!$kelas) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kelas tidak ditemukan'
+            ], 404);
+        }
+        return response()->json([
+            'success' => true,
+            'data' => $kelas
+        ], 200);
+    }
     /**
      * Logout Pengguna
      *

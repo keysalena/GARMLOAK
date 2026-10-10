@@ -17,18 +17,20 @@ class ProfileController extends Controller
     {
         $user = $request->user();
 
+        $user->loadMissing('kelas');
+
         return response()->json([
             'success' => true,
             'message' => 'Data profil berhasil diambil',
             'data' => [
                 'nama' => $user->nama,
                 'email' => $user->email,
-                // Tambahkan baris ini untuk mengirim URL gambar yang valid
                 'avatar_url' => $user->avatar_url ? url('storage/' . $user->avatar_url) : null,
                 'level' => $user->level ?? 1,
                 'xp' => $user->total_xp ?? 0,
                 'xp_target' => ($user->level ?? 1) * 500,
-                'bergabung_sejak' => $user->created_at->translatedFormat('F Y')
+                'nama_kelas' => $user->kelas ? $user->kelas->nama_kelas : 'Belum ada kelas',
+                'bergabung_sejak' => $user->created_at->translatedFormat('d F Y')
             ]
         ], 200);
     }
@@ -52,7 +54,7 @@ class ProfileController extends Controller
 
             // Simpan foto baru ke folder storage/app/public/avatars
             $path = $request->file('avatar')->store('avatars', 'public');
-            
+
             // Simpan path ke database
             $user->avatar_url = $path;
             $user->save();

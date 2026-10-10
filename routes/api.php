@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\ProfileController;
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::get('/kelas', [AuthController::class, 'getKelas']);
+Route::get('/kelas/{id}', [AuthController::class, 'getKelasById']);
 
 // Route Protected (Wajib mengirimkan Bearer Token dari hasil Login)
 Route::middleware('auth:sanctum')->group(function () {
