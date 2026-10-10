@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Module;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB; // Wajib ditambahkan untuk query builder
+use Illuminate\Support\Facades\Hash;
 
 class ProfileController extends Controller
 {
@@ -20,8 +21,10 @@ class ProfileController extends Controller
             'success' => true,
             'message' => 'Data profil berhasil diambil',
             'data' => [
-                'nama' => $user->nama, // Sesuaikan dengan nama kolom di DB Anda
+                'nama' => $user->nama,
                 'email' => $user->email,
+                // Tambahkan baris ini untuk mengirim URL gambar yang valid
+                'avatar_url' => $user->avatar_url ? url('storage/' . $user->avatar_url) : null,
                 'level' => $user->level ?? 1,
                 'xp' => $user->total_xp ?? 0,
                 'xp_target' => ($user->level ?? 1) * 500,
@@ -30,6 +33,39 @@ class ProfileController extends Controller
         ], 200);
     }
 
+    /**
+     * Memperbarui Foto Profil
+     */
+    public function updateAvatar(Request $request)
+    {
+        $request->validate([
+            'avatar' => 'required|image|mimes:jpeg,png,jpg|max:2048', // Maksimal 2MB
+        ]);
+
+        $user = $request->user();
+
+        if ($request->hasFile('avatar')) {
+            // Hapus foto lama jika ada (opsional)
+            if ($user->avatar_url && \Illuminate\Support\Facades\Storage::disk('public')->exists($user->avatar_url)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($user->avatar_url);
+            }
+
+            // Simpan foto baru ke folder storage/app/public/avatars
+            $path = $request->file('avatar')->store('avatars', 'public');
+            
+            // Simpan path ke database
+            $user->avatar_url = $path;
+            $user->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Foto profil berhasil diperbarui',
+                'avatar_url' => url('storage/' . $path)
+            ], 200);
+        }
+
+        return response()->json(['success' => false, 'message' => 'Tidak ada gambar yang diunggah'], 400);
+    }
     /**
      * Mengambil Data Statistik / Progress Belajar
      */
@@ -88,6 +124,63 @@ class ProfileController extends Controller
                 'total_modul' => $totalModules,
                 'persentase_keseluruhan' => $persentaseKeseluruhan,
             ]
+        ], 200);
+    }
+    /**
+     * Memperbarui Data Profil Pengguna
+     */
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'nama' => 'required|string|max:100',
+            'email' => 'required|email|unique:users,email,' . $user->user_id . ',user_id',
+        ]);
+
+        if (!str_ends_with($request->email, '@um.ac.id') && !str_ends_with($request->email, '@student.um.ac.id')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda wajib menggunakan email domain @um.ac.id atau @student.um.ac.id!'
+            ], 422);
+        }
+
+        $user->nama = $request->nama;
+        $user->email = $request->email;
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Profil berhasil diperbarui'
+        ], 200);
+    }
+    /**
+     * Memperbarui Kata Sandi
+     */
+    public function updatePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required',
+            'new_password' => 'required|min:6|confirmed', // 'confirmed' mensyaratkan input 'new_password_confirmation' yang identik
+        ]);
+
+        $user = $request->user();
+
+        // Cek apakah password lama yang dimasukkan sesuai dengan yang ada di database
+        if (!Hash::check($request->current_password, $user->password_hash)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kata sandi saat ini tidak cocok.'
+            ], 400);
+        }
+
+        // Simpan password baru
+        $user->password_hash = Hash::make($request->new_password);
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Kata sandi berhasil diperbarui.'
         ], 200);
     }
 }

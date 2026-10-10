@@ -82,16 +82,7 @@ return new class extends Migration
             $table->boolean('is_correct')->default(false);
             $table->timestamp('deleted_at')->nullable();
         });
-
-        Schema::create('badges', function (Blueprint $table) {
-            $table->id('badge_id');
-            $table->string('nama', 100);
-            $table->string('deskripsi', 255)->nullable();
-            $table->string('icon_url', 255)->nullable();
-            $table->string('kriteria', 255)->nullable();
-            $table->timestamp('deleted_at')->nullable();
-        });
-
+        
         Schema::create('users', function (Blueprint $table) {
             $table->uuid('user_id')->primary();
             $table->foreignId('kelas_id')->nullable()->constrained('kelas', 'kelas_id');
@@ -108,34 +99,6 @@ return new class extends Migration
             $table->foreign('level')->references('level_number')->on('levels');
         });
 
-        Schema::create('user_answers', function (Blueprint $table) {
-            $table->uuid('answer_id')->primary();
-            $table->foreignUuid('user_id')->constrained('users', 'user_id')->cascadeOnDelete();
-            $table->foreignId('question_id')->constrained('questions', 'question_id')->cascadeOnDelete();
-            $table->foreignId('option_id')->constrained('question_options', 'option_id');
-            $table->boolean('is_correct');
-            $table->integer('xp_didapat')->default(0);
-            $table->timestamp('dijawab_pada')->useCurrent();
-        });
-
-        Schema::create('user_material_progress', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->foreignUuid('user_id')->constrained('users', 'user_id')->cascadeOnDelete();
-            $table->foreignId('materi_id')->constrained('materi', 'materi_id')->cascadeOnDelete();
-            $table->enum('status', ['belum', 'selesai'])->default('belum');
-            $table->timestamp('selesai_pada')->nullable();
-            $table->unique(['user_id', 'materi_id']);
-        });
-
-        Schema::create('user_ar_progress', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->foreignUuid('user_id')->constrained('users', 'user_id')->cascadeOnDelete();
-            $table->foreignId('ar_id')->constrained('ar_content', 'ar_id')->cascadeOnDelete();
-            $table->enum('status', ['belum', 'selesai'])->default('belum');
-            $table->timestamp('selesai_pada')->nullable();
-            $table->unique(['user_id', 'ar_id']);
-        });
-
         Schema::create('user_module_progress', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('user_id')->constrained('users', 'user_id')->cascadeOnDelete();
@@ -147,42 +110,7 @@ return new class extends Migration
             $table->unique(['user_id', 'module_id']);
         });
 
-        Schema::create('xp_transactions', function (Blueprint $table) {
-            $table->uuid('transaction_id')->primary();
-            $table->foreignUuid('user_id')->constrained('users', 'user_id')->cascadeOnDelete();
-            $table->enum('source_type', ['materi', 'ar_explore', 'challenge']);
-            $table->integer('source_id');
-            $table->integer('jumlah_xp');
-            $table->timestamp('created_at')->useCurrent();
-        });
-
-        Schema::create('user_badges', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->foreignUuid('user_id')->constrained('users', 'user_id')->cascadeOnDelete();
-            $table->foreignId('badge_id')->constrained('badges', 'badge_id')->cascadeOnDelete();
-            $table->timestamp('earned_at')->useCurrent();
-            $table->unique(['user_id', 'badge_id']);
-        });
-
-        Schema::create('daily_activity_log', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->foreignUuid('user_id')->constrained('users', 'user_id')->cascadeOnDelete();
-            $table->date('tanggal');
-            $table->integer('waktu_belajar_menit')->default(0);
-            $table->integer('ar_explore_count')->default(0);
-            $table->integer('challenge_count')->default(0);
-            $table->unique(['user_id', 'tanggal']);
-        });
-
-        Schema::create('recommendations', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->foreignUuid('user_id')->constrained('users', 'user_id')->cascadeOnDelete();
-            $table->foreignId('module_id')->nullable()->constrained('modules', 'module_id')->nullOnDelete();
-            $table->text('teks');
-            $table->timestamp('created_at')->useCurrent();
-            $table->boolean('is_read')->default(false);
-            $table->timestamp('deleted_at')->nullable();
-        });
+        
 
         DB::table('levels')->insert([
             ['level_number' => 1, 'nama_level' => 'Pemula', 'xp_min' => 0, 'xp_max' => 199],

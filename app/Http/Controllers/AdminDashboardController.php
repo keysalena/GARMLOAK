@@ -327,16 +327,16 @@ class AdminDashboardController extends Controller
     public function storeArContent(Request $request)
     {
         $data = $request->validate([
-            'module_id'        => 'required|exists:modules,module_id',
-            'judul'            => 'required|string|max:150',
-            'marker_image_url' => 'nullable|string|max:255',
-            'model_3d_url'     => 'nullable|string|max:255',
-            'penjelasan'       => 'nullable|string',
+            'module_id'    => 'required|exists:modules,module_id',
+            'judul'        => 'required|string|max:150',
+            'model_3d_url' => 'required|url|max:255', // Diubah jadi required dan berformat URL
         ]);
 
         ArContent::create([
-            ...$data,
-            'urutan' => (ArContent::where('module_id', $data['module_id'])->max('urutan') ?? 0) + 1,
+            'module_id'    => $data['module_id'],
+            'judul'        => $data['judul'],
+            'model_3d_url' => $data['model_3d_url'],
+            'urutan'       => (ArContent::where('module_id', $data['module_id'])->max('urutan') ?? 0) + 1,
         ]);
 
         return back()->with('success', 'AR Content berhasil ditambahkan.');
@@ -345,11 +345,9 @@ class AdminDashboardController extends Controller
     public function updateArContent(Request $request, ArContent $arContent)
     {
         $data = $request->validate([
-            'module_id'        => 'required|exists:modules,module_id',
-            'judul'            => 'required|string|max:150',
-            'marker_image_url' => 'nullable|string|max:255',
-            'model_3d_url'     => 'nullable|string|max:255',
-            'penjelasan'       => 'nullable|string',
+            'module_id'    => 'required|exists:modules,module_id',
+            'judul'        => 'required|string|max:150',
+            'model_3d_url' => 'required|url|max:255', // Diubah jadi required dan berformat URL
         ]);
 
         $arContent->update($data);

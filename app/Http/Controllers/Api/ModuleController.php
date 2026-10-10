@@ -7,6 +7,7 @@ use App\Models\Module;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB; // Wajib ditambahkan untuk query builder
 use App\Models\Question;
+use Illuminate\Support\Str; // <-- TAMBAHKAN INI
 
 class ModuleController extends Controller
 {
@@ -17,29 +18,32 @@ class ModuleController extends Controller
     {
         $user = $request->user();
 
-        // Mengambil semua modul diurutkan berdasarkan field 'urutan'
+        // 1. Hapus with('ar_content') untuk mencegah error jika relasi Model belum didefinisikan
         $modules = Module::orderBy('urutan', 'asc')->get();
 
-        // Mapping data untuk menyisipkan perhitungan progres
         $modulesData = $modules->map(function ($module) use ($user) {
-
-            // 1. Hitung total materi reguler (MENGABAIKAN tipe pendahuluan)
+            
+            // Hitung total materi
             $totalMateri = DB::table('materi')
                 ->where('module_id', $module->module_id)
                 ->where('tipe', '!=', 'pendahuluan')
                 ->count();
 
-            // 2. Hitung materi reguler yang sudah diselesaikan user
+            // Hitung materi selesai
             $completedMateri = DB::table('user_progress')
                 ->join('materi', 'user_progress.materi_id', '=', 'materi.materi_id')
-                ->where('user_progress.user_id', $user->user_id) // Pastikan nama PK user sesuai (user_id / id)
+                ->where('user_progress.user_id', $user->user_id)
                 ->where('materi.module_id', $module->module_id)
                 ->where('materi.tipe', '!=', 'pendahuluan')
                 ->count();
 
-            // 3. Hitung progres dalam format desimal 0.0 hingga 1.0 (Kebutuhan Flutter)
-            // Contoh: 1 selesai dari 4 materi = 0.25
             $progress = $totalMateri > 0 ? (float) ($completedMateri / $totalMateri) : 0.0;
+
+            // 2. Ambil data AR secara manual (BYPASS Model)
+            $arContent = DB::table('ar_content')
+                ->where('module_id', $module->module_id)
+                ->orderBy('urutan', 'asc')
+                ->get();
 
             return [
                 'module_id' => $module->module_id,
@@ -47,7 +51,8 @@ class ModuleController extends Controller
                 'judul' => $module->judul,
                 'deskripsi' => $module->deskripsi,
                 'urutan' => $module->urutan,
-                'progress' => $progress, // Nilai progres dikirim ke UI
+                'progress' => $progress,
+                'ar_content' => $arContent, // Masukkan data AR ke dalam response JSON
             ];
         });
 
@@ -65,10 +70,8 @@ class ModuleController extends Controller
     {
         $user = $request->user();
 
-        $module = Module::with([
-            'materi',
-            'questions.options'
-        ])->find($id);
+        // Cari data Modul utama
+        $module = Module::where('module_id', $id)->first();
 
         if (!$module) {
             return response()->json([
@@ -77,49 +80,68 @@ class ModuleController extends Controller
             ], 404);
         }
 
-        $pendahuluan = $module->materi->where('tipe', 'pendahuluan')->first();
+        // 3. BYPASS RELASI MODEL: Gunakan DB Query langsung agar materi pasti terbaca
+        $pendahuluan = DB::table('materi')
+            ->where('module_id', $id)
+            ->where('tipe', 'pendahuluan')
+            ->first();
 
-        // Pastikan urutan materi konsisten (sesuaikan kolom urutan jika ada)
-        $materiList = $module->materi
+        $materiList = DB::table('materi')
+            ->where('module_id', $id)
             ->where('tipe', '!=', 'pendahuluan')
-            ->sortBy('urutan')
-            ->values();
+            ->orderBy('urutan')
+            ->get();
 
-        // Ambil materi_id yang sudah diselesaikan user pada modul ini
+        // 4. Ambil ID materi yang sudah dikerjakan
+        $materiIds = $materiList->pluck('materi_id')->toArray();
         $completedIds = DB::table('user_progress')
             ->where('user_id', $user->user_id)
-            ->whereIn('materi_id', $module->materi->pluck('materi_id'))
+            ->whereIn('materi_id', $materiIds)
             ->pluck('materi_id')
-            ->map(fn($id) => (string) $id)
+            ->map(fn($m_id) => (string) $m_id)
             ->values();
 
-        $data = [
-            'module_id' => $module->module_id,
-            'kode_modul' => $module->kode_modul,
-            'judul' => $module->judul,
-            'deskripsi' => $module->deskripsi,
-            'urutan' => $module->urutan,
-            'pendahuluan' => $pendahuluan,
-            'materi' => $materiList,
-            'kuis' => $module->questions,
-            'completed_materi_ids' => $completedIds,
-        ];
+        // 5. Ambil data kuis dan progress-nya
+        $kuis = Question::with('options')->where('module_id', $id)->orderBy('urutan')->get();
+
+        $moduleProgress = DB::table('user_module_progress')
+            ->where('user_id', $user->user_id)
+            ->where('module_id', $id)
+            ->first();
+
+        $isKuisSelesai = $moduleProgress && $moduleProgress->status === 'selesai';
+        $kuisScore = $moduleProgress ? (int) $moduleProgress->skor_rata_rata : 0;
 
         return response()->json([
             'success' => true,
             'message' => 'Detail modul berhasil diambil',
-            'data' => $data
+            'data' => [
+                'module_id' => $module->module_id,
+                'kode_modul' => $module->kode_modul,
+                'judul' => $module->judul,
+                'deskripsi' => $module->deskripsi,
+                'urutan' => $module->urutan,
+                'pendahuluan' => $pendahuluan,
+                'materi' => $materiList,
+                'kuis' => $kuis,
+                'completed_materi_ids' => $completedIds,
+                'kuis_selesai' => $isKuisSelesai,
+                'kuis_score' => $kuisScore,
+            ]
         ], 200);
     }
+
     public function completeMateri(Request $request, $id)
     {
         $user = $request->user();
 
+        // Cek apakah materi sudah pernah diselesaikan
         $already = DB::table('user_progress')
-            ->where('user_id', $user->user_id)
+            ->where('user_id', $user->user_id) // Sesuaikan dengan nama primary key di tabel users Anda (user_id atau id)
             ->where('materi_id', $id)
             ->exists();
 
+        // Jika sudah selesai sebelumnya, cegah eksploitasi (jangan tambah XP lagi)
         if ($already) {
             return response()->json([
                 'success' => true,
@@ -128,86 +150,141 @@ class ModuleController extends Controller
             ]);
         }
 
+        // 1. Simpan riwayat penyelesaian materi
         DB::table('user_progress')->insert([
-            'user_id' => $user->user_id,
+            'user_id' => $user->user_id, // Sesuaikan PK user
             'materi_id' => $id,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        // Sesuaikan dengan logika XP/level yang sudah ada
-        $xpGained = 15;
-        // ... tambahkan XP ke user, hitung level ...
+        // 2. Logika Penambahan XP
+        $xpGained = 15; // Anda bisa mengubah jumlah XP per materi di sini
+        $user->total_xp += $xpGained;
+
+        // 3. Logika Naik Level (Contoh: Setiap kelipatan 500 XP naik 1 level)
+        $oldLevel = $user->level;
+        $newLevel = floor($user->total_xp / 500) + 1;
+
+        $isLevelUp = $newLevel > $oldLevel;
+
+        if ($isLevelUp) {
+            $user->level = $newLevel;
+        }
+
+        // 4. SIMPAN PERUBAHAN KE DATABASE (Ini yang sebelumnya terlewat)
+        $user->save();
 
         return response()->json([
             'success' => true,
             'message' => 'Progres tersimpan',
             'data' => [
                 'xp_gained' => $xpGained,
-                'is_level_up' => false, // isi dari hasil hitung level
+                'is_level_up' => $isLevelUp,
                 'level' => $user->level ?? 1,
             ],
         ]);
     }
+
     public function submitKuis(Request $request, $moduleId)
     {
-        // 1. Validasi input dari Flutter
         $request->validate([
             'jawaban' => 'required|array',
         ]);
 
-        // Mengambil data user yang sedang login menggunakan token Sanctum
         $user = $request->user();
         $jawabanUser = $request->jawaban;
 
-        // 2. Ambil data soal kuis berdasarkan module_id
-        // Pastikan model 'Kuis' sesuai dengan nama model Anda di Laravel
-        $kuisList = Question::where('module_id', $moduleId)->orderBy('id')->get();
+        // Ambil data soal beserta opsinya, urutkan berdasarkan kolom 'urutan'
+        // Pastikan model Question Anda memiliki relasi 'options' (hasMany ke QuestionOption)
+        $kuisList = Question::with('options')->where('module_id', $moduleId)->orderBy('urutan')->get();
 
         if ($kuisList->isEmpty()) {
             return response()->json([
-                'success' => false, 
+                'success' => false,
                 'message' => 'Kuis tidak ditemukan.'
             ], 404);
         }
 
-        // 3. Hitung Jawaban Benar
         $benar = 0;
         $totalSoal = $kuisList->count();
 
+        // Array abjad untuk mencocokkan index opsi dari database dengan jawaban Flutter ('a', 'b', 'c', 'd')
+        $abjad = ['a', 'b', 'c', 'd', 'e'];
+
         foreach ($kuisList as $index => $kuis) {
-            // Asumsi tabel kuis Anda memiliki kolom 'kunci_jawaban'
-            $kunci = strtolower($kuis->kunci_jawaban);
-            
-            // Cocokkan jawaban berdasarkan index (urutan soal)
+            $correctIndex = -1;
+
+            // Cari opsi mana yang is_correct bernilai true (1) di database
+            foreach ($kuis->options as $optIndex => $option) {
+                if ($option->is_correct) {
+                    $correctIndex = $optIndex;
+                    break;
+                }
+            }
+
+            // Ubah index (misal 0) menjadi abjad (misal 'a') untuk dicocokkan
+            $kunci = ($correctIndex !== -1 && isset($abjad[$correctIndex])) ? $abjad[$correctIndex] : null;
+
+            // Ambil jawaban dari Flutter sesuai urutan soal
             $jawaban = isset($jawabanUser[$index]) ? strtolower($jawabanUser[$index]) : null;
 
-            if ($jawaban === $kunci) {
+            // Jika jawaban cocok, tambah poin benar
+            if ($kunci && $jawaban === $kunci) {
                 $benar++;
             }
         }
 
-        // 4. Hitung Skor (Skala 100)
+        // Hitung Skor (Skala 100)
         $score = (int) round(($benar / $totalSoal) * 100);
 
-        // 5. Tambahkan XP (1 Skor = 1 XP)
+        // --- KODE PERBAIKAN PENYIMPANAN NILAI & STATUS KUIS ---
+        $progress = DB::table('user_module_progress')
+            ->where('user_id', $user->user_id)
+            ->where('module_id', $moduleId)
+            ->first();
+
+        if ($progress) {
+            // Jika sudah ada, update datanya
+            DB::table('user_module_progress')
+                ->where('id', $progress->id)
+                ->update([
+                    'status' => 'selesai',
+                    'skor_rata_rata' => $score,
+                    'persen_selesai' => 100,
+                    'updated_at' => now(),
+                ]);
+        } else {
+            // Jika belum ada, buat row baru beserta UUID manual
+            DB::table('user_module_progress')->insert([
+                'id' => (string) Str::uuid(), // Generate UUID manual untuk kolom ID
+                'user_id' => $user->user_id,
+                'module_id' => $moduleId,
+                'status' => 'selesai',
+                'skor_rata_rata' => $score,
+                'persen_selesai' => 100,
+                'updated_at' => now(),
+            ]);
+        }
+        // ------------------------------------------------------
+
+        // Tambahkan XP
         $xpGained = $score;
         $user->total_xp += $xpGained;
-        
-        // 6. Cek Logika Naik Level (Contoh: Kelipatan 500 XP = 1 Level)
+
+        // Logika Naik Level (Kelipatan 500 XP = 1 Level)
         $oldLevel = $user->level;
-        $newLevel = floor($user->total_xp / 500) + 1; 
-        
+        $newLevel = floor($user->total_xp / 500) + 1;
+
         $isLevelUp = $newLevel > $oldLevel;
-        
+
         if ($isLevelUp) {
             $user->level = $newLevel;
         }
-        
-        // 7. Simpan perubahan ke database
+
+        // Simpan perubahan XP dan Level ke tabel users
         $user->save();
 
-        // 8. Kembalikan Response ke aplikasi Flutter
         return response()->json([
             'success' => true,
             'message' => 'Kuis berhasil diselesaikan.',

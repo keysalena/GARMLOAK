@@ -18,13 +18,13 @@ class HomeController extends Controller
         // 1. AMBIL SEMUA MODUL & HITUNG PROGRES
         // ==========================================
         $modules = Module::orderBy('urutan', 'asc')->get();
-        
+
         $targetModule = null;
         $modulSelesaiCount = 0;
         $totalModul = $modules->count();
 
         foreach ($modules as $module) {
-            
+
             $totalMateri = DB::table('materi')
                 ->where('module_id', $module->module_id)
                 ->where('tipe', '!=', 'pendahuluan')
@@ -32,7 +32,7 @@ class HomeController extends Controller
 
             $completedMateri = DB::table('user_progress')
                 ->join('materi', 'user_progress.materi_id', '=', 'materi.materi_id')
-                ->where('user_progress.user_id', $user->user_id) 
+                ->where('user_progress.user_id', $user->user_id)
                 ->where('materi.module_id', $module->module_id)
                 ->where('materi.tipe', '!=', 'pendahuluan')
                 ->count();
@@ -68,12 +68,12 @@ class HomeController extends Controller
         // ==========================================
         // 2. LOGIKA LEADERBOARD (Berdasarkan skema DB)
         // ==========================================
-        
+
         // A. Leaderboard Global (Hanya role 'mahasiswa')
         $leaderboardGlobal = User::where('role', 'mahasiswa')
             ->orderBy('total_xp', 'desc')
             ->take(3)
-            ->get(['nama', 'total_xp', 'level']) 
+            ->get(['nama', 'total_xp', 'level'])
             ->map(function ($u, $index) {
                 return [
                     'rank' => $index + 1,
@@ -85,7 +85,7 @@ class HomeController extends Controller
 
         // B. Leaderboard Per Kelas
         // Menggunakan 'kelas_id' sesuai dengan skema tabel users Anda
-        $kelasIdUser = $user->kelas_id; 
+        $kelasIdUser = $user->kelas_id;
         $leaderboardKelas = [];
 
         if ($kelasIdUser != null) {
@@ -111,12 +111,11 @@ class HomeController extends Controller
             'success' => true,
             'data' => [
                 'user' => [
-                    'nama' => $user->nama, 
+                    'nama' => $user->nama,
                     'level' => $user->level,
                     'xp' => $user->total_xp,
-                    // Karena Anda punya tabel 'levels', idealnya target diambil dari sana.
-                    // Namun agar Flutter tidak crash, kita tetap pakai rumus * 500 sementara.
-                    'xp_target' => $user->level * 500, 
+                    'avatar_url' => $user->avatar_url ? url('storage/' . $user->avatar_url) : null,
+                    'xp_target' => $user->level * 500,
                 ],
                 'last_module' => $targetModule,
                 'modul_selesai' => $modulSelesaiCount,

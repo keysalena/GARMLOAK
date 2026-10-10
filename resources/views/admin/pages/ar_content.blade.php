@@ -21,8 +21,9 @@
     <table class="data-table">
         <thead>
             <tr>
-                <th>Judul</th>
                 <th>Modul</th>
+                <th>Judul</th>
+                <th>Link Web AR</th>
                 <th>Urutan</th>
                 <th>Aksi</th>
             </tr>
@@ -30,8 +31,17 @@
         <tbody>
             @forelse ($items as $item)
             <tr>
-                <td>{{ $item->judul }}</td>
                 <td>{{ $item->module?->judul ?? '-' }}</td>
+                <td>{{ $item->judul }}</td>
+                <td>
+                    @if($item->model_3d_url)
+                        <a href="{{ $item->model_3d_url }}" target="_blank" style="color: #0d6efd; text-decoration: underline; font-weight: 500;">
+                            Lihat AR &nearr;
+                        </a>
+                    @else
+                        <span style="color: #6c757d;">Belum ada link</span>
+                    @endif
+                </td>
                 <td>{{ $item->urutan }}</td>
                 <td class="action-cell">
                     <!-- Tombol Edit memanggil fungsi JS dengan data item -->
@@ -44,7 +54,7 @@
             </tr>
             @empty
             <tr>
-                <td colspan="4" class="empty-state">Belum ada AR content.</td>
+                <td colspan="5" class="empty-state">Belum ada AR content.</td>
             </tr>
             @endforelse
         </tbody>
@@ -65,13 +75,8 @@
             <input type="hidden" name="_method" id="formMethod" value="POST">
 
             <label class="field-group">
-                <span>Judul</span>
-                <input type="text" name="judul" id="inputJudul" required>
-            </label>
-
-            <label class="field-group">
                 <span>Modul</span>
-                <select name="module_id" id="inputModule">
+                <select name="module_id" id="inputModule" required>
                     <option value="" disabled selected>Pilih Modul</option>
                     @foreach ($modules as $module)
                     <option value="{{ $module->module_id }}">{{ $module->judul }}</option>
@@ -80,8 +85,13 @@
             </label>
 
             <label class="field-group">
-                <span>Penjelasan</span>
-                <textarea name="penjelasan" id="inputPenjelasan" rows="4"></textarea>
+                <span>Judul AR</span>
+                <input type="text" name="judul" id="inputJudul" placeholder="Contoh: AR Anatomi CPU" required>
+            </label>
+
+            <label class="field-group">
+                <span>Link Web AR</span>
+                <input type="url" name="model_3d_url" id="inputLink" placeholder="https://..." required>
             </label>
 
             <div class="action-cell" style="margin-top: 20px;">
@@ -116,9 +126,9 @@
             formMethod.value = 'PUT'; // Gunakan PUT untuk Edit
             
             // Isi form dengan data yang dilempar
-            document.getElementById('inputJudul').value = data.judul || '';
             document.getElementById('inputModule').value = data.module_id || '';
-            document.getElementById('inputPenjelasan').value = data.penjelasan || '';
+            document.getElementById('inputJudul').value = data.judul || '';
+            document.getElementById('inputLink').value = data.model_3d_url || '';
         }
         
         modal.style.display = 'block';
@@ -134,9 +144,14 @@
             closeModal();
         }
     }
-        function setLoading(button) {
+    
+    function setLoading(button) {
+        // Validasi native HTML5 sebelum animasi loading berjalan
+        if(!form.checkValidity()) {
+            return;
+        }
+        
         button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Menyimpan...';
-
         setTimeout(() => {
             button.disabled = true;
         }, 10);

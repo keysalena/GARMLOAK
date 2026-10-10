@@ -9,6 +9,8 @@ use App\Http\Controllers\Api\ProfileController;
 
 // Route Public (Tidak perlu token)
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [AuthController::class, 'register']);
+Route::get('/kelas', [AuthController::class, 'getKelas']);
 
 // Route Protected (Wajib mengirimkan Bearer Token dari hasil Login)
 Route::middleware('auth:sanctum')->group(function () {
@@ -20,6 +22,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/modules', [ModuleController::class, 'index']);
     Route::get('/modules/{id}', [ModuleController::class, 'show']);
 
+    
     Route::post('/materi/{id}/complete', [ModuleController::class, 'completeMateri']);
     Route::post('/modules/{moduleId}/submit-kuis', [ModuleController::class, 'submitKuis']);
     Route::get('/profile', [ProfileController::class, 'getProfile']);
@@ -31,4 +34,7 @@ Route::middleware('auth:sanctum')->group(function () {
             'data' => $request->user()
         ]);
     });
+    Route::post('/user/profile/update', [ProfileController::class, 'updateProfile']);
+    Route::post('/user/password/update', [ProfileController::class, 'updatePassword']);
+    Route::post('/user/profile/avatar', [ProfileController::class, 'updateAvatar']);
 });
