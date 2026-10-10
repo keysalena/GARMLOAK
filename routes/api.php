@@ -27,14 +27,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/modules/{moduleId}/submit-kuis', [ModuleController::class, 'submitKuis']);
     Route::get('/profile', [ProfileController::class, 'getProfile']);
     Route::get('/progress', [ProfileController::class, 'getProgress']);
-    // // Endpoint untuk mendapatkan data profil user yang sedang login
-    // Route::get('/user/profile', function (Request $request) {
-    //     return response()->json([
-    //         'success' => true,
-    //         'data' => $request->user()
-    //     ]);
-    // });
-    Route::get('/user/profile', [ProfileController::class, 'getProfile']);
+    // Endpoint untuk mendapatkan data profil user yang sedang login
+    Route::get('/user/profile', function (Request $request) {
+        return response()->json([
+            'success' => true,
+            'data' => $request->user()
+        ]);
+    });
     Route::post('/user/profile/update', [ProfileController::class, 'updateProfile']);
     Route::post('/user/password/update', [ProfileController::class, 'updatePassword']);
     Route::post('/user/profile/avatar', [ProfileController::class, 'updateAvatar']);
