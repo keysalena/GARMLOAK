@@ -93,7 +93,7 @@ return [
         'enabled' => true,
 
         // The base URL to use in the API tester. Leave as null to be the same as the displayed URL (`scribe.base_url`).
-        'base_url' => 'http://localhost:8000',
+        'base_url' => 'https://f3189a1b-3e72-4dd3-9283-a208f7681479.svc.dalang.io/',
 
         // [Laravel Sanctum] Fetch a CSRF token before each request, and add it as an X-XSRF-TOKEN header.
         'use_csrf' => false,
