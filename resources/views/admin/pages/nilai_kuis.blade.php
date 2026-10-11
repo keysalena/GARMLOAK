@@ -1,96 +1,110 @@
-@extends('layouts.admin') {{-- Sesuaikan dengan nama layout master admin Anda --}}
+@extends('layouts.admin')
+
+@section('title', 'Rekap Nilai Kuis')
+@section('breadcrumb')
+<li style="color: #adb5bd; font-size: 12px;">/</li>
+<li style="color: #2e7d32; font-weight: 600;" aria-current="page">Rekap Nilai Kuis</li>
+@endsection
 
 @section('content')
-<div class="container-fluid pt-4">
-    <h1 class="mb-4 text-dark font-weight-bold">Rekap Nilai Kuis Siswa</h1>
-
-    <!-- KOTAK FILTER -->
-    <div class="card shadow-sm mb-4">
-        <div class="card-body bg-light">
-            <form action="{{ route('admin.nilai_kuis.index') }}" method="GET" class="row align-items-end">
-                
-                <!-- Filter Kelas -->
-                <div class="col-md-4 mb-3 mb-md-0">
-                    <label for="kelas_id" class="form-label font-weight-bold">Pilih Kelas</label>
-                    <select name="kelas_id" id="kelas_id" class="form-control">
-                        <option value="">-- Semua Kelas --</option>
-                        @foreach($kelasList as $kelas)
-                            <option value="{{ $kelas->id }}" {{ $filterKelas == $kelas->id ? 'selected' : '' }}>
-                                {{ $kelas->nama_kelas }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <!-- Filter Modul -->
-                <div class="col-md-4 mb-3 mb-md-0">
-                    <label for="module_id" class="form-label font-weight-bold">Pilih Modul</label>
-                    <select name="module_id" id="module_id" class="form-control">
-                        <option value="">-- Semua Modul --</option>
-                        @foreach($moduleList as $modul)
-                            <option value="{{ $modul->module_id }}" {{ $filterModule == $modul->module_id ? 'selected' : '' }}>
-                                {{ $modul->judul }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <!-- Tombol Aksi -->
-                <div class="col-md-4">
-                    <button type="submit" class="btn btn-primary btn-block mb-2">
-                        <i class="fas fa-filter"></i> Terapkan Filter
-                    </button>
-                    <a href="{{ route('admin.nilai_kuis.index') }}" class="btn btn-outline-secondary btn-block">
-                        <i class="fas fa-sync-alt"></i> Reset
-                    </a>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- TABEL DATA NILAI -->
-    <div class="card shadow-sm">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-bordered table-striped table-hover mb-0">
-                    <thead class="thead-dark">
-                        <tr>
-                            <th width="5%" class="text-center">No</th>
-                            <th>Nama Siswa</th>
-                            <th>Kelas</th>
-                            <th>Modul Kuis</th>
-                            <th class="text-center">Skor (Nilai)</th>
-                            <th>Waktu Pengerjaan</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($dataNilai as $index => $nilai)
-                        <tr>
-                            <td class="text-center">{{ $index + 1 }}</td>
-                            <td class="font-weight-bold">{{ $nilai->nama_siswa ?? 'Siswa Terhapus' }}</td>
-                            <td>
-                                <span class="badge badge-info px-2 py-1">
-                                    {{ $nilai->nama_kelas ?? 'Belum ada kelas' }}
-                                </span>
-                            </td>
-                            <td>{{ $nilai->nama_modul ?? 'Modul Tidak Diketahui' }}</td>
-                            <td class="text-center">
-                                <h5 class="mb-0 text-success font-weight-bold">{{ $nilai->score }}</h5>
-                            </td>
-                            <td>{{ \Carbon\Carbon::parse($nilai->tanggal)->translatedFormat('d M Y, H:i') }}</td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="6" class="text-center py-5 text-muted">
-                                <i class="fas fa-folder-open fa-3x mb-3 text-black-50"></i><br>
-                                Belum ada siswa yang mengerjakan kuis pada filter ini.
-                            </td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
+<div class="page-header">
+    <div>
+        <p class="eyebrow text-green">Data</p>
+        <h1>Rekap Nilai Kuis</h1>
     </div>
 </div>
+
+<!-- ========================================== -->
+<!-- FILTER -->
+<!-- ========================================== -->
+<div class="panel-card" style="margin-bottom: 20px;">
+    <div class="panel-header">
+        <h3>Filter Data</h3>
+    </div>
+
+    <form action="{{ route('admin.nilai_kuis.index') }}" method="GET" class="login-form" style="padding: 20px;">
+        <div style="display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end;">
+            <label class="field-group" style="flex: 1; min-width: 220px; margin: 0;">
+                <span>Pilih Kelas</span>
+                <select name="kelas_id" id="kelas_id" style="width: 100%;">
+                    <option value="">Semua Kelas</option>
+                    @foreach ($kelasList as $kelas)
+                    <option value="{{ $kelas->kelas_id ?? $kelas->id }}" {{ $filterKelas == ($kelas->kelas_id ?? $kelas->id) ? 'selected' : '' }}>
+                        {{ $kelas->nama_kelas }}
+                    </option>
+                    @endforeach
+                </select>
+            </label>
+
+            <label class="field-group" style="flex: 1; min-width: 220px; margin: 0;">
+                <span>Pilih Modul</span>
+                <select name="module_id" id="module_id" style="width: 100%;">
+                    <option value="">Semua Modul</option>
+                    @foreach ($moduleList as $modul)
+                    <option value="{{ $modul->module_id }}" {{ $filterModule == $modul->module_id ? 'selected' : '' }}>
+                        {{ $modul->judul }}
+                    </option>
+                    @endforeach
+                </select>
+            </label>
+
+            <div class="action-cell" style="margin: 0;">
+                <button type="submit" class="btn btn-primary" onclick="setLoading(this)">Terapkan Filter</button>
+                <a href="{{ route('admin.nilai_kuis.index') }}" class="btn btn-secondary">Reset</a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- ========================================== -->
+<!-- TABEL NILAI -->
+<!-- ========================================== -->
+<div class="panel-card">
+    <div class="panel-header">
+        <h3>Daftar Nilai Kuis</h3>
+        <span class="pill neutral">{{ $dataNilai->count() }} item</span>
+    </div>
+
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>NO</th>
+                <th>Nama Siswa</th>
+                <th>Kelas</th>
+                <th>Modul Kuis</th>
+                <th>Skor</th>
+                <th>Waktu Pengerjaan</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse ($dataNilai as $nilai)
+            <tr>
+                <td>{{ $loop->iteration }}</td>
+                <td>{{ $nilai->nama_siswa ?? 'Siswa Terhapus' }}</td>
+                <td>{{ $nilai->nama_kelas ?? 'Belum ada kelas' }}</td>
+                <td>{{ $nilai->nama_modul ?? 'Modul Tidak Diketahui' }}</td>
+                <td>
+                    <span class="pill neutral" style="font-weight: 700; color: #2e7d32;">{{ $nilai->score }}</span>
+                </td>
+                <td>{{ \Carbon\Carbon::parse($nilai->tanggal)->translatedFormat('d M Y, H:i') }}</td>
+            </tr>
+            @empty
+            <tr>
+                <td colspan="6" class="empty-state">Belum ada siswa yang mengerjakan kuis pada filter ini.</td>
+            </tr>
+            @endforelse
+        </tbody>
+    </table>
+</div>
+
+<script>
+    // --- LOGIKA LOADING TOMBOL FILTER ---
+    function setLoading(button) {
+        button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Memuat...';
+        setTimeout(() => {
+            button.disabled = true;
+            button.form.submit();
+        }, 10);
+    }
+</script>
 @endsection
