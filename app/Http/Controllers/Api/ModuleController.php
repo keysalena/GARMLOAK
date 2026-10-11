@@ -35,7 +35,7 @@ class ModuleController extends Controller
             ->get()
             ->groupBy('module_id');
 
-        $modulesData = $modules->map(fn ($module) => [
+        $modulesData = $modules->map(fn($module) => [
             'module_id' => $module->module_id,
             'kode_modul' => $module->kode_modul,
             'judul' => $module->judul,
@@ -74,6 +74,7 @@ class ModuleController extends Controller
         // Semua materi modul diambil 1x, lalu dipisah di PHP
         $semuaMateri = DB::table('materi')
             ->where('module_id', $id)
+            ->whereNull('deleted_at') // <--- Tambahkan filter ini
             ->orderBy('urutan')
             ->get();
 
@@ -85,7 +86,7 @@ class ModuleController extends Controller
             ->where('user_id', $user->user_id)
             ->whereIn('materi_id', $materiList->pluck('materi_id'))
             ->pluck('materi_id')
-            ->map(fn ($mId) => (string) $mId)
+            ->map(fn($mId) => (string) $mId)
             ->values();
 
         // Kuis + opsi (2 query). Kunci jawaban TIDAK dikirim ke aplikasi.
@@ -93,7 +94,7 @@ class ModuleController extends Controller
             ->where('module_id', $id)
             ->orderBy('urutan')
             ->get();
-        $kuis->each(fn ($q) => $q->options->each->makeHidden('is_correct'));
+        $kuis->each(fn($q) => $q->options->each->makeHidden('is_correct'));
 
         $moduleProgress = DB::table('user_module_progress')
             ->where('user_id', $user->user_id)
@@ -126,7 +127,7 @@ class ModuleController extends Controller
     {
         $user = $request->user();
 
-        $sudahSelesai = fn () => response()->json([
+        $sudahSelesai = fn() => response()->json([
             'success' => true,
             'message' => 'Materi sudah diselesaikan',
             'data' => ['xp_gained' => 0, 'is_level_up' => false, 'level' => $user->level ?? 1],
@@ -200,7 +201,7 @@ class ModuleController extends Controller
         $totalSoal = $kuisList->count();
 
         foreach ($kuisList as $index => $kuis) {
-            $correctIndex = $kuis->options->search(fn ($opt) => (bool) $opt->is_correct);
+            $correctIndex = $kuis->options->search(fn($opt) => (bool) $opt->is_correct);
             $kunci = $correctIndex !== false ? ($abjad[$correctIndex] ?? null) : null;
 
             $jawaban = isset($jawabanUser[$index]) ? strtolower((string) $jawabanUser[$index]) : null;
