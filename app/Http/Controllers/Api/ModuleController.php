@@ -4,10 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Module;
-use App\Models\Question;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB; 
-use Illuminate\Support\Str; 
+use Illuminate\Support\Facades\DB; // Wajib ditambahkan untuk query builder
+use App\Models\Question;
+use Illuminate\Support\Str; // <-- TAMBAHKAN INI
 
 class ModuleController extends Controller
 {
@@ -18,35 +18,32 @@ class ModuleController extends Controller
     {
         $user = $request->user();
 
-        // MENGGUNAKAN EAGER LOADING: Mengambil semua modul beserta relasi materi dan ar_content sekaligus
-        // Asumsi: Pada model 'Module', Anda sudah mendaftarkan relasi 'materi' (hasMany) dan 'arContent' (hasMany)
-        // Jika belum, buatkan public function materi() dan arContent() di App\Models\Module.php
-        $modules = Module::with(['materi' => function($query) {
-                // Hanya hitung materi yang bukan pendahuluan
-                $query->where('tipe', '!=', 'pendahuluan');
-            }, 'arContent' => function($query) {
-                $query->orderBy('urutan', 'asc');
-            }])
-            ->orderBy('urutan', 'asc')
-            ->get();
+        // 1. Hapus with('ar_content') untuk mencegah error jika relasi Model belum didefinisikan
+        $modules = Module::orderBy('urutan', 'asc')->get();
 
-        // MENGAMBIL PROGRESS USER: Sekali query untuk mengambil seluruh ID materi yang sudah diselesaikan user ini
-        $completedMateriIds = DB::table('user_progress')
-            ->where('user_id', $user->user_id)
-            ->pluck('materi_id')
-            ->toArray();
+        $modulesData = $modules->map(function ($module) use ($user) {
+            
+            // Hitung total materi
+            $totalMateri = DB::table('materi')
+                ->where('module_id', $module->module_id)
+                ->where('tipe', '!=', 'pendahuluan')
+                ->count();
 
-        $modulesData = $modules->map(function ($module) use ($completedMateriIds) {
-            // Ambil koleksi materi dari relasi (sudah difilter bukan pendahuluan)
-            $materi = $module->materi;
-            $totalMateri = $materi->count();
-
-            // Hitung berapa materi dari modul ini yang ID-nya ada di dalam array $completedMateriIds
-            $completedMateri = $materi->filter(function($m) use ($completedMateriIds) {
-                return in_array($m->materi_id, $completedMateriIds);
-            })->count();
+            // Hitung materi selesai
+            $completedMateri = DB::table('user_progress')
+                ->join('materi', 'user_progress.materi_id', '=', 'materi.materi_id')
+                ->where('user_progress.user_id', $user->user_id)
+                ->where('materi.module_id', $module->module_id)
+                ->where('materi.tipe', '!=', 'pendahuluan')
+                ->count();
 
             $progress = $totalMateri > 0 ? (float) ($completedMateri / $totalMateri) : 0.0;
+
+            // 2. Ambil data AR secara manual (BYPASS Model)
+            $arContent = DB::table('ar_content')
+                ->where('module_id', $module->module_id)
+                ->orderBy('urutan', 'asc')
+                ->get();
 
             return [
                 'module_id' => $module->module_id,
@@ -55,7 +52,7 @@ class ModuleController extends Controller
                 'deskripsi' => $module->deskripsi,
                 'urutan' => $module->urutan,
                 'progress' => $progress,
-                'ar_content' => $module->arContent, // Menggunakan relasi langsung
+                'ar_content' => $arContent, // Masukkan data AR ke dalam response JSON
             ];
         });
 
@@ -73,12 +70,8 @@ class ModuleController extends Controller
     {
         $user = $request->user();
 
-        // MENGGUNAKAN EAGER LOADING: Ambil modul berserta materi dan kuis (dan opsi kuis) dalam 1 query utama
-        $module = Module::with(['materi' => function($query) {
-                $query->orderBy('urutan', 'asc');
-            }, 'questions.options'])
-            ->where('module_id', $id)
-            ->first();
+        // Cari data Modul utama
+        $module = Module::where('module_id', $id)->first();
 
         if (!$module) {
             return response()->json([
@@ -87,26 +80,30 @@ class ModuleController extends Controller
             ], 404);
         }
 
-        // Pisahkan materi berdasarkan tipe (memanfaatkan Collection Laravel tanpa query ke DB lagi)
-        $materiCollection = $module->materi;
-        
-        $pendahuluan = $materiCollection->firstWhere('tipe', 'pendahuluan');
-        $materiList = $materiCollection->where('tipe', '!=', 'pendahuluan')->values(); // Gunakan .values() untuk me-reset index array
+        // 3. BYPASS RELASI MODEL: Gunakan DB Query langsung agar materi pasti terbaca
+        $pendahuluan = DB::table('materi')
+            ->where('module_id', $id)
+            ->where('tipe', 'pendahuluan')
+            ->first();
 
-        // Ambil ID materi yang sudah dikerjakan khusus untuk daftar materi yang ada di modul ini saja
+        $materiList = DB::table('materi')
+            ->where('module_id', $id)
+            ->where('tipe', '!=', 'pendahuluan')
+            ->orderBy('urutan')
+            ->get();
+
+        // 4. Ambil ID materi yang sudah dikerjakan
         $materiIds = $materiList->pluck('materi_id')->toArray();
-        $completedIds = [];
-        
-        if (!empty($materiIds)) {
-            $completedIds = DB::table('user_progress')
-                ->where('user_id', $user->user_id)
-                ->whereIn('materi_id', $materiIds)
-                ->pluck('materi_id')
-                ->map(fn($m_id) => (string) $m_id)
-                ->values();
-        }
+        $completedIds = DB::table('user_progress')
+            ->where('user_id', $user->user_id)
+            ->whereIn('materi_id', $materiIds)
+            ->pluck('materi_id')
+            ->map(fn($m_id) => (string) $m_id)
+            ->values();
 
-        // Ambil status kuis user
+        // 5. Ambil data kuis dan progress-nya
+        $kuis = Question::with('options')->where('module_id', $id)->orderBy('urutan')->get();
+
         $moduleProgress = DB::table('user_module_progress')
             ->where('user_id', $user->user_id)
             ->where('module_id', $id)
@@ -126,7 +123,7 @@ class ModuleController extends Controller
                 'urutan' => $module->urutan,
                 'pendahuluan' => $pendahuluan,
                 'materi' => $materiList,
-                'kuis' => $module->questions, // Mengambil langsung dari relasi (Asumsi: ada public function questions() di Module.php)
+                'kuis' => $kuis,
                 'completed_materi_ids' => $completedIds,
                 'kuis_selesai' => $isKuisSelesai,
                 'kuis_score' => $kuisScore,
@@ -140,7 +137,7 @@ class ModuleController extends Controller
 
         // Cek apakah materi sudah pernah diselesaikan
         $already = DB::table('user_progress')
-            ->where('user_id', $user->user_id) 
+            ->where('user_id', $user->user_id) // Sesuaikan dengan nama primary key di tabel users Anda (user_id atau id)
             ->where('materi_id', $id)
             ->exists();
 
@@ -155,17 +152,17 @@ class ModuleController extends Controller
 
         // 1. Simpan riwayat penyelesaian materi
         DB::table('user_progress')->insert([
-            'user_id' => $user->user_id, 
+            'user_id' => $user->user_id, // Sesuaikan PK user
             'materi_id' => $id,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
         // 2. Logika Penambahan XP
-        $xpGained = 15; 
+        $xpGained = 15; // Anda bisa mengubah jumlah XP per materi di sini
         $user->total_xp += $xpGained;
 
-        // 3. Logika Naik Level
+        // 3. Logika Naik Level (Contoh: Setiap kelipatan 500 XP naik 1 level)
         $oldLevel = $user->level;
         $newLevel = floor($user->total_xp / 500) + 1;
 
@@ -175,7 +172,7 @@ class ModuleController extends Controller
             $user->level = $newLevel;
         }
 
-        // 4. SIMPAN PERUBAHAN KE DATABASE
+        // 4. SIMPAN PERUBAHAN KE DATABASE (Ini yang sebelumnya terlewat)
         $user->save();
 
         return response()->json([
@@ -199,6 +196,7 @@ class ModuleController extends Controller
         $jawabanUser = $request->jawaban;
 
         // Ambil data soal beserta opsinya, urutkan berdasarkan kolom 'urutan'
+        // Pastikan model Question Anda memiliki relasi 'options' (hasMany ke QuestionOption)
         $kuisList = Question::with('options')->where('module_id', $moduleId)->orderBy('urutan')->get();
 
         if ($kuisList->isEmpty()) {
@@ -259,7 +257,7 @@ class ModuleController extends Controller
         } else {
             // Jika belum ada, buat row baru beserta UUID manual
             DB::table('user_module_progress')->insert([
-                'id' => (string) Str::uuid(), 
+                'id' => (string) Str::uuid(), // Generate UUID manual untuk kolom ID
                 'user_id' => $user->user_id,
                 'module_id' => $moduleId,
                 'status' => 'selesai',
