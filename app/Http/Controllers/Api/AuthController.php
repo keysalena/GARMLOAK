@@ -3,42 +3,37 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Carbon\Carbon;
-use Illuminate\Support\Str;
 use App\Models\Kelas;
+use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
     /**
      * Login Pengguna
      *
-     * Endpoint ini digunakan untuk melakukan autentikasi mahasiswa atau admin menggunakan email dan password. 
-     * Respons akan mengembalikan Token Sanctum (Bearer) yang harus disertakan di endpoint lain.
-     * 
      * @unauthenticated
      */
     public function login(Request $request)
     {
         $request->validate([
             'email' => 'required|email',
-            'password' => 'required'
+            'password' => 'required',
         ]);
 
-        $user = User::where('email', $request->email)->first();
+        // with('kelas') = 1 query tambahan saja
+        $user = User::with('kelas')->where('email', $request->email)->first();
 
-        // 1. Validasi keberadaan user dan kecocokan password terlebih dahulu
         if (!$user || !Hash::check($request->password, $user->password_hash)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Email atau Password salah!',
             ], 401);
         }
-
-        // 2. Jika validasi sukses, baru panggil relasinya
-        $user->loadMissing('kelas');
 
         $token = $user->createToken('mobile_token')->plainTextToken;
 
@@ -50,19 +45,21 @@ class AuthController extends Controller
                     'user_id' => $user->user_id,
                     'nama' => $user->nama,
                     'email' => $user->email,
-                    // Gunakan backslash (\Carbon\Carbon) jika belum melakukan import class di atas
-                    'bergabung_sejak' => \Carbon\Carbon::parse($user->created_at)->translatedFormat('F Y'),
-                    'nama_kelas' => $user->kelas ? $user->kelas->nama_kelas : 'Belum ada kelas',
+                    'bergabung_sejak' => Carbon::parse($user->created_at)->translatedFormat('F Y'),
+                    'nama_kelas' => $user->kelas?->nama_kelas ?? 'Belum ada kelas',
                     'role' => $user->role,
                     'level' => $user->level,
                     'total_xp' => $user->total_xp,
                 ],
-                'token' => $token
-            ]
+                'token' => $token,
+            ],
         ], 200);
     }
+
     /**
      * Registrasi Pengguna Baru
+     *
+     * @unauthenticated
      */
     public function register(Request $request)
     {
@@ -70,23 +67,22 @@ class AuthController extends Controller
             'nama' => 'required|string|max:100',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:6',
-            'kelas_id' => 'required|exists:kelas,kelas_id'
+            'kelas_id' => 'required|exists:kelas,kelas_id',
         ]);
 
-        // Validasi wajib email um.ac.id atau student.um.ac.id
         if (!str_ends_with($request->email, '@um.ac.id') && !str_ends_with($request->email, '@student.um.ac.id')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Pendaftaran gagal. Anda wajib menggunakan email domain @um.ac.id atau @student.um.ac.id!'
+                'message' => 'Pendaftaran gagal. Anda wajib menggunakan email domain @um.ac.id atau @student.um.ac.id!',
             ], 422);
         }
 
         $user = User::create([
-            'user_id' => (string) Str::uuid(), // Membutuhkan UUID sesuai schema database Anda[cite: 9]
+            'user_id' => (string) Str::uuid(),
             'kelas_id' => $request->kelas_id,
             'nama' => $request->nama,
             'email' => $request->email,
-            'password_hash' => Hash::make($request->password), // Password disimpan ke password_hash[cite: 9, 16]
+            'password_hash' => Hash::make($request->password),
             'role' => 'mahasiswa',
             'level' => 1,
             'total_xp' => 0,
@@ -103,41 +99,31 @@ class AuthController extends Controller
                     'nama' => $user->nama,
                     'email' => $user->email,
                 ],
-                'token' => $token
-            ]
+                'token' => $token,
+            ],
         ], 201);
     }
 
     /**
-     * Mengambil Daftar Kelas untuk Dropdown Flutter
+     * Daftar kelas untuk dropdown register. Jarang berubah, di-cache 1 jam.
+     * Setelah menambah/mengubah kelas, jalankan: php artisan cache:forget kelas_list
+     *
+     * @unauthenticated
      */
     public function getKelas()
     {
-        $kelas = Kelas::select('kelas_id', 'nama_kelas', 'tahun_ajaran')->get();
+        $kelas = Cache::remember('kelas_list', 3600, fn () =>
+            Kelas::select('kelas_id', 'nama_kelas', 'tahun_ajaran')->get()->toArray()
+        );
+
         return response()->json([
             'success' => true,
-            'data' => $kelas
+            'data' => $kelas,
         ], 200);
     }
-    public function getKelasById($id)
-    {
-        $kelas = Kelas::select('kelas_id', 'nama_kelas', 'tahun_ajaran')->where('kelas_id', $id)->first();
-        if (!$kelas) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Kelas tidak ditemukan'
-            ], 404);
-        }
-        return response()->json([
-            'success' => true,
-            'data' => $kelas
-        ], 200);
-    }
+
     /**
-     * Logout Pengguna
-     *
-     * Endpoint ini digunakan untuk menghapus sesi/token pengguna yang sedang aktif (Revoke Token).
-     * Membutuhkan Bearer Token di header Authorization.
+     * Logout (cabut token yang sedang dipakai).
      */
     public function logout(Request $request)
     {
@@ -145,7 +131,7 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Logout berhasil!'
+            'message' => 'Logout berhasil!',
         ], 200);
     }
 }
