@@ -55,6 +55,6 @@ Route::prefix('/')->name('admin.')->group(function () {
         Route::post('options', [AdminDashboardController::class, 'storeBulkOptions'])->name('options.storeBulk');
         Route::delete('options/{option}', [AdminDashboardController::class, 'destroyOption'])->name('options.destroy');
 
-        Route::get('/admin/nilai-kuis', [NilaiKuisController::class, 'index'])->name('nilai_kuis.index');
+        Route::get('admin/nilai-kuis', [NilaiKuisController::class, 'index'])->name('nilai_kuis.index');
     });
 });

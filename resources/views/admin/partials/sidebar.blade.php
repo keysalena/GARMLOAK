@@ -44,13 +44,14 @@
             </a>
 
             <hr>
-
-            <li class="nav-item">
-                <a href="{{ route('admin.nilai_kuis.index') }}" class="nav-link {{ request()->routeIs('admin.nilai_kuis.*') ? 'active' : '' }}">
-                    <i class="nav-icon fas fa-award text-warning"></i>
-                    <p>Rekap Nilai Kuis</p>
-                </a>
-            </li>
+            <a href="{{ route('admin.nilai_kuis.index') }}" class="nav-link {{ request()->routeIs('admin.nilai_kuis.*') ? 'active' : '' }}">
+                <span class="nav-icon">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2ZM9 17H7v-7h2v7Zm4 0h-2V7h2v10Zm4 0h-2v-4h2v4Z" />
+                    </svg>
+                </span>
+                <span>Rekap Nilai Kuis</span>
+            </a>
         </nav>
     </div>
 
