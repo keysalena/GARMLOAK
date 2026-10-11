@@ -5,7 +5,6 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\HomeController;
 use App\Http\Controllers\Api\ModuleController;
 use App\Http\Controllers\Api\ProfileController;
-use Illuminate\Http\Request;
 
 // ---------------------------------------------------------------
 // Public (tanpa token). Throttle melindungi login dari brute force.
@@ -27,9 +26,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/materi/{id}/complete', [ModuleController::class, 'completeMateri']);
     Route::post('/modules/{moduleId}/submit-kuis', [ModuleController::class, 'submitKuis']);
 
-    Route::get('/user/profile', function (Request $request) {
-        return response()->json(['success' => true, 'data' => $request->user()]);
-    });
+    Route::get('/user/profile', [ProfileController::class, 'getProfile']);
     Route::post('/user/profile/update', [ProfileController::class, 'updateProfile']);
     Route::post('/user/password/update', [ProfileController::class, 'updatePassword']);
     Route::post('/user/profile/avatar', [ProfileController::class, 'updateAvatar']);

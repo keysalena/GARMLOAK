@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -28,7 +29,11 @@ class ProfileController extends Controller
                 'xp' => $user->total_xp ?? 0,
                 'xp_target' => ($user->level ?? 1) * 500,
                 'nama_kelas' => $user->kelas?->nama_kelas ?? 'Belum ada kelas',
-                'bergabung_sejak' => $user->created_at?->translatedFormat('d F Y'),
+                // Format ISO (2026-10-11): profile_screen.dart yang mengubahnya jadi "11 Oktober 2026".
+                // created_at di model User berupa string, jadi harus di-parse dulu.
+                'bergabung_sejak' => $user->created_at
+                    ? Carbon::parse($user->created_at)->toDateString()
+                    : null,
             ],
         ], 200);
     }
