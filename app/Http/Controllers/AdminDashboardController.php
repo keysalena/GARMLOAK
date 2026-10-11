@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 class AdminDashboardController extends Controller
 {
@@ -462,5 +463,23 @@ class AdminDashboardController extends Controller
         $option->delete();
 
         return back()->with('success', 'Opsi jawaban berhasil dihapus.');
+    }
+
+    public function uploadImage(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'upload' => 'required|image|mimes:jpg,jpeg,png,gif,webp|max:5120', // 5 MB
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'error' => ['message' => $validator->errors()->first('upload')],
+            ], 422);
+        }
+
+        $path = $request->file('upload')->store('materi_images', 'public');
+
+        // Path relatif, supaya aman jika domain berubah
+        return response()->json(['url' => '/storage/' . $path]);
     }
 }

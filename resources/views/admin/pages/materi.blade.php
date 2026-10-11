@@ -10,7 +10,8 @@
 <li style="color: #2e7d32; font-weight: 600;" aria-current="page">Kelola Materi</li>
 @endsection
 @section('content')
-<script src="https://cdn.ckeditor.com/4.22.1/standard-all/ckeditor.js"></script>
+<link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5/48.5.2/ckeditor5.css">
+<script src="https://cdn.ckeditor.com/ckeditor5/48.5.2/ckeditor5.umd.js"></script>
 
 <div class="page-header">
     <div>
@@ -192,46 +193,89 @@
         overflow-y: auto;
         padding: 20px;
     }
+
+    .ck.ck-balloon-panel {
+        z-index: 10010 !important;
+    }
+
+    .ck-editor__editable_inline {
+        min-height: 300px;
+    }
 </style>
 
 <script>
-    CKEDITOR.replace('inputKontenTeks', {
-        height: 300,
-        toolbar: [{
-                name: 'document',
-                items: ['Source']
-            },
-            {
-                name: 'clipboard',
-                items: ['Undo', 'Redo']
-            },
-            {
-                name: 'styles',
-                items: ['Format', 'Font', 'FontSize']
-            },
-            {
-                name: 'basicstyles',
-                items: ['Bold', 'Italic', 'Underline', 'Strike', 'RemoveFormat']
-            },
-            {
-                name: 'colors',
-                items: ['TextColor', 'BGColor']
-            },
-            {
-                name: 'paragraph',
-                items: ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'Blockquote', 'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock']
-            },
-            {
-                name: 'links',
-                items: ['Link', 'Unlink']
-            },
-            {
-                name: 'insert',
-                items: ['Image', 'Table', 'HorizontalRule']
-            }
+    let editorInstance = null;
+
+    const {
+        ClassicEditor,
+        Essentials,
+        Paragraph,
+        Heading,
+        Bold,
+        Italic,
+        Underline,
+        Strikethrough,
+        RemoveFormat,
+        Font,
+        Alignment,
+        List,
+        Indent,
+        BlockQuote,
+        Link,
+        AutoLink,
+        PasteFromOffice,
+        Table,
+        TableToolbar,
+        HorizontalLine,
+        SourceEditing,
+        Image,
+        ImageToolbar,
+        ImageCaption,
+        ImageStyle,
+        ImageResize,
+        ImageUpload,
+        SimpleUploadAdapter
+    } = CKEDITOR;
+
+    ClassicEditor.create(document.querySelector('#inputKontenTeks'), {
+        licenseKey: 'GPL',
+        plugins: [
+            Essentials, Paragraph, Heading, Bold, Italic, Underline, Strikethrough, RemoveFormat,
+            Font, Alignment, List, Indent, BlockQuote, Link, AutoLink, PasteFromOffice,
+            Table, TableToolbar, HorizontalLine, SourceEditing,
+            Image, ImageToolbar, ImageCaption, ImageStyle, ImageResize, ImageUpload, SimpleUploadAdapter
         ],
-        removeButtons: 'Subscript,Superscript'
-    });
+        toolbar: {
+            items: [
+                'sourceEditing', '|', 'undo', 'redo', '|',
+                'heading', 'fontFamily', 'fontSize', '|',
+                'bold', 'italic', 'underline', 'strikethrough', 'removeFormat', '|',
+                'fontColor', 'fontBackgroundColor', '|',
+                'numberedList', 'bulletedList', 'outdent', 'indent', 'blockQuote', 'alignment', '|',
+                'link', 'uploadImage', 'insertTable', 'horizontalLine'
+            ],
+            shouldNotGroupWhenFull: true
+        },
+        simpleUpload: {
+            uploadUrl: "{{ route('admin.upload.image') }}",
+            headers: {
+                'X-CSRF-TOKEN': "{{ csrf_token() }}"
+            }
+        },
+        image: {
+            toolbar: [
+                'toggleImageCaption', 'imageTextAlternative', '|',
+                'imageStyle:inline', 'imageStyle:block', 'imageStyle:side', '|', 'resizeImage'
+            ]
+        },
+        table: {
+            contentToolbar: ['tableColumn', 'tableRow', 'mergeTableCells']
+        }
+    })
+    .then(editor => {
+        editorInstance = editor;
+    })
+    .catch(error => console.error(error));
 
     const modal = document.getElementById('materiModal');
     const form = document.getElementById('materiForm');
@@ -269,10 +313,7 @@
     function openModal(mode, data = null) {
         form.reset();
 
-        // Coba reset CKEditor dengan aman
-        try {
-            CKEDITOR.instances.inputKontenTeks.setData('');
-        } catch (e) {}
+        if (editorInstance) editorInstance.setData('');
 
         if (mode === 'create') {
             modalTitle.innerText = 'Tambah Materi Baru';
@@ -292,10 +333,7 @@
             toggleKontenInput(data.tipe || 'teks');
 
             if (data.tipe === 'teks' || data.tipe === 'pendahuluan') {
-                // PERBAIKAN: Gunakan setTimeout agar CKEditor punya waktu untuk me-load data
-                setTimeout(() => {
-                    CKEDITOR.instances.inputKontenTeks.setData(data.konten_teks || '');
-                }, 100);
+                if (editorInstance) editorInstance.setData(data.konten_teks || '');
             } else {
                 document.getElementById('inputKontenUrl').value = data.konten_url || '';
             }
@@ -308,9 +346,9 @@
     }
 
     function syncEditor() {
-        // Ambil data HTML dari CKEditor dan paksakan masuk ke textarea sebelum form disubmit
-        const data = CKEDITOR.instances.inputKontenTeks.getData();
-        document.getElementById('inputKontenTeks').value = data;
+        if (editorInstance) {
+            document.getElementById('inputKontenTeks').value = editorInstance.getData();
+        }
     }
 
     function setLoading(button) {
