@@ -1,10 +1,10 @@
 <?php
 
+use App\Http\Controllers\NilaiKuisController;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Middleware\EnsureAdmin;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\NilaiKuisController;
 
 // Route::get('/', function () {
 //     return view('welcome');
