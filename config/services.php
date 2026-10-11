@@ -34,5 +34,7 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
-
+    'ckeditor' => [
+        'license_key' => env('CKEDITOR_LICENSE_KEY'),
+    ],
 ];
