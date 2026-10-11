@@ -57,6 +57,6 @@ Route::prefix('/')->name('admin.')->group(function () {
 
         Route::get('admin/nilai-kuis', [NilaiKuisController::class, 'index'])->name('nilai_kuis.index');
 
-        Route::post('/upload-image', [AdminDashboardController::class, 'uploadImage'])->name('admin.upload.image');
+        Route::post('/upload-image', [AdminDashboardController::class, 'uploadImage'])->name('upload.image');
     });
 });
