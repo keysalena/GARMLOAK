@@ -23,7 +23,7 @@ class NilaiKuisController extends Controller
         // Buat query gabungan (Join) ke tabel users, kelas, dan modules
         $query = DB::table('user_module_progress')
             ->join('users', 'user_module_progress.user_id', '=', 'users.user_id')
-            ->leftJoin('kelas', 'users.kelas_id', '=', 'kelas.id') // Sesuaikan jika primary key kelas bukan 'id'
+            ->leftJoin('kelas', 'users.kelas_id', '=', 'kelas.kelas_id') // Sesuaikan jika primary key kelas bukan 'id'
             ->join('modules', 'user_module_progress.module_id', '=', 'modules.module_id')
             ->select(
                 'users.nama as nama_siswa',
