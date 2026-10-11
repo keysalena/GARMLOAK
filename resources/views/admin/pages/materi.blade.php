@@ -201,6 +201,17 @@
     .ck-editor__editable_inline {
         min-height: 300px;
     }
+
+    .ck-editor__editable {
+        user-select: text !important;
+        -webkit-user-select: text !important;
+        pointer-events: auto !important;
+    }
+
+    .ck.ck-editor {
+        position: relative;
+        z-index: 1;
+    }
 </style>
 
 <script>
@@ -238,44 +249,53 @@
     } = CKEDITOR;
 
     ClassicEditor.create(document.querySelector('#inputKontenTeks'), {
-        licenseKey: 'GPL',
-        plugins: [
-            Essentials, Paragraph, Heading, Bold, Italic, Underline, Strikethrough, RemoveFormat,
-            Font, Alignment, List, Indent, BlockQuote, Link, AutoLink, PasteFromOffice,
-            Table, TableToolbar, HorizontalLine, SourceEditing,
-            Image, ImageToolbar, ImageCaption, ImageStyle, ImageResize, ImageUpload, SimpleUploadAdapter
-        ],
-        toolbar: {
-            items: [
-                'sourceEditing', '|', 'undo', 'redo', '|',
-                'heading', 'fontFamily', 'fontSize', '|',
-                'bold', 'italic', 'underline', 'strikethrough', 'removeFormat', '|',
-                'fontColor', 'fontBackgroundColor', '|',
-                'numberedList', 'bulletedList', 'outdent', 'indent', 'blockQuote', 'alignment', '|',
-                'link', 'uploadImage', 'insertTable', 'horizontalLine'
+            licenseKey: 'GPL',
+            plugins: [
+                Essentials, Paragraph, Heading, Bold, Italic, Underline, Strikethrough, RemoveFormat,
+                Font, Alignment, List, Indent, BlockQuote, Link, AutoLink, PasteFromOffice,
+                Table, TableToolbar, HorizontalLine, SourceEditing,
+                Image, ImageToolbar, ImageCaption, ImageStyle, ImageResize, ImageUpload, SimpleUploadAdapter
             ],
-            shouldNotGroupWhenFull: true
-        },
-        simpleUpload: {
-            uploadUrl: "{{ route('admin.upload.image') }}",
-            headers: {
-                'X-CSRF-TOKEN': "{{ csrf_token() }}"
+            toolbar: {
+                items: [
+                    'sourceEditing', '|', 'undo', 'redo', '|',
+                    'heading', 'fontFamily', 'fontSize', '|',
+                    'bold', 'italic', 'underline', 'strikethrough', 'removeFormat', '|',
+                    'fontColor', 'fontBackgroundColor', '|',
+                    'numberedList', 'bulletedList', 'outdent', 'indent', 'blockQuote', 'alignment', '|',
+                    'link', 'uploadImage', 'insertTable', 'horizontalLine'
+                ],
+                shouldNotGroupWhenFull: true
+            },
+            simpleUpload: {
+                uploadUrl: "{{ route('admin.upload.image') }}",
+                headers: {
+                    'X-CSRF-TOKEN': "{{ csrf_token() }}"
+                }
+            },
+            image: {
+                toolbar: [
+                    'toggleImageCaption', 'imageTextAlternative', '|',
+                    'imageStyle:inline', 'imageStyle:block', 'imageStyle:side', '|', 'resizeImage'
+                ]
+            },
+            table: {
+                contentToolbar: ['tableColumn', 'tableRow', 'mergeTableCells']
             }
-        },
-        image: {
-            toolbar: [
-                'toggleImageCaption', 'imageTextAlternative', '|',
-                'imageStyle:inline', 'imageStyle:block', 'imageStyle:side', '|', 'resizeImage'
-            ]
-        },
-        table: {
-            contentToolbar: ['tableColumn', 'tableRow', 'mergeTableCells']
-        }
-    })
-    .then(editor => {
-        editorInstance = editor;
-    })
-    .catch(error => console.error(error));
+        })
+        .then(editor => {
+            editorInstance = editor;
+            console.log('CKEditor siap. Read-only?', editor.isReadOnly);
+
+            // Jaga-jaga: paksa mode edit jika terkunci
+            if (editor.isReadOnly) {
+                editor.disableReadOnlyMode('lock-awal');
+            }
+        })
+        .catch(error => {
+            console.error(error);
+            alert('CKEditor gagal dimuat: ' + (error.message || error));
+        });
 
     const modal = document.getElementById('materiModal');
     const form = document.getElementById('materiForm');
