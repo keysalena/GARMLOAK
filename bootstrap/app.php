@@ -13,6 +13,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        
+        // --- TAMBAHKAN BARIS INI UNTUK MENGATASI WARNING "NOT SECURE" ---
+        $middleware->trustProxies(at: '*');
+        // ----------------------------------------------------------------
+
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureAdmin::class,
         ]);
