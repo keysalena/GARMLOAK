@@ -42,6 +42,15 @@
                 </span>
                 <span>AR Content</span>
             </a>
+
+            <hr>
+
+            <li class="nav-item">
+                <a href="{{ route('admin.nilai_kuis.index') }}" class="nav-link {{ request()->routeIs('admin.nilai_kuis.*') ? 'active' : '' }}">
+                    <i class="nav-icon fas fa-award text-warning"></i>
+                    <p>Rekap Nilai Kuis</p>
+                </a>
+            </li>
         </nav>
     </div>
 

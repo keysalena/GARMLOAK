@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Middleware\EnsureAdmin;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\NilaiKuisController;
 
 // Route::get('/', function () {
 //     return view('welcome');
@@ -53,5 +54,7 @@ Route::prefix('/')->name('admin.')->group(function () {
         Route::get('questions/{question}/options', [AdminDashboardController::class, 'optionsIndex'])->name('questions.options');
         Route::post('options', [AdminDashboardController::class, 'storeBulkOptions'])->name('options.storeBulk');
         Route::delete('options/{option}', [AdminDashboardController::class, 'destroyOption'])->name('options.destroy');
+
+        Route::get('/admin/nilai-kuis', [NilaiKuisController::class, 'index'])->name('admin.nilai_kuis.index');
     });
 });
