@@ -10,8 +10,8 @@
 <li style="color: #2e7d32; font-weight: 600;" aria-current="page">Kelola Materi</li>
 @endsection
 @section('content')
-<link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5/48.5.2/ckeditor5.css">
-<script src="https://cdn.ckeditor.com/ckeditor5/48.5.2/ckeditor5.umd.js"></script>
+<link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5/49.0.0/ckeditor5.css">
+<script src="https://cdn.ckeditor.com/ckeditor5/49.0.0/ckeditor5.umd.js"></script>
 
 <div class="page-header">
     <div>
@@ -226,7 +226,6 @@
         Italic,
         Underline,
         Strikethrough,
-        RemoveFormat,
         Font,
         Alignment,
         List,
@@ -234,7 +233,6 @@
         BlockQuote,
         Link,
         AutoLink,
-        PasteFromOffice,
         Table,
         TableToolbar,
         HorizontalLine,
@@ -243,40 +241,77 @@
         ImageToolbar,
         ImageCaption,
         ImageStyle,
-        ImageResize,
-        ImageUpload,
-        SimpleUploadAdapter
+        ImageUpload
     } = CKEDITOR;
 
+    // Adapter upload buatan sendiri -> endpoint Laravel
+    class LaravelUploadAdapter {
+        constructor(loader) {
+            this.loader = loader;
+        }
+
+        upload() {
+            return this.loader.file.then(file => {
+                const data = new FormData();
+                data.append('upload', file);
+
+                return fetch("{{ route('admin.upload.image') }}", {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': "{{ csrf_token() }}",
+                            'Accept': 'application/json'
+                        },
+                        body: data
+                    })
+                    .then(res => res.json().then(json => ({
+                        ok: res.ok,
+                        json
+                    })))
+                    .then(({
+                        ok,
+                        json
+                    }) => {
+                        if (!ok || json.error) {
+                            throw new Error(json.error?.message || json.message || 'Upload gagal');
+                        }
+                        return {
+                            default: json.url
+                        };
+                    });
+            });
+        }
+
+        abort() {}
+    }
+
+    function LaravelUploadPlugin(editor) {
+        editor.plugins.get('FileRepository').createUploadAdapter = loader => new LaravelUploadAdapter(loader);
+    }
+
     ClassicEditor.create(document.querySelector('#inputKontenTeks'), {
-            licenseKey: 'GPL',
+            licenseKey: "{{ config('services.ckeditor.license_key') }}",
             plugins: [
-                Essentials, Paragraph, Heading, Bold, Italic, Underline, Strikethrough, RemoveFormat,
-                Font, Alignment, List, Indent, BlockQuote, Link, AutoLink, PasteFromOffice,
+                Essentials, Paragraph, Heading, Bold, Italic, Underline, Strikethrough,
+                Font, Alignment, List, Indent, BlockQuote, Link, AutoLink,
                 Table, TableToolbar, HorizontalLine, SourceEditing,
-                Image, ImageToolbar, ImageCaption, ImageStyle, ImageResize, ImageUpload, SimpleUploadAdapter
+                Image, ImageToolbar, ImageCaption, ImageStyle, ImageUpload
             ],
+            extraPlugins: [LaravelUploadPlugin],
             toolbar: {
                 items: [
                     'sourceEditing', '|', 'undo', 'redo', '|',
                     'heading', 'fontFamily', 'fontSize', '|',
-                    'bold', 'italic', 'underline', 'strikethrough', 'removeFormat', '|',
+                    'bold', 'italic', 'underline', 'strikethrough', '|',
                     'fontColor', 'fontBackgroundColor', '|',
                     'numberedList', 'bulletedList', 'outdent', 'indent', 'blockQuote', 'alignment', '|',
                     'link', 'uploadImage', 'insertTable', 'horizontalLine'
                 ],
                 shouldNotGroupWhenFull: true
             },
-            simpleUpload: {
-                uploadUrl: "{{ route('admin.upload.image') }}",
-                headers: {
-                    'X-CSRF-TOKEN': "{{ csrf_token() }}"
-                }
-            },
             image: {
                 toolbar: [
                     'toggleImageCaption', 'imageTextAlternative', '|',
-                    'imageStyle:inline', 'imageStyle:block', 'imageStyle:side', '|', 'resizeImage'
+                    'imageStyle:inline', 'imageStyle:block', 'imageStyle:side'
                 ]
             },
             table: {
@@ -286,11 +321,6 @@
         .then(editor => {
             editorInstance = editor;
             console.log('CKEditor siap. Read-only?', editor.isReadOnly);
-
-            // Jaga-jaga: paksa mode edit jika terkunci
-            if (editor.isReadOnly) {
-                editor.disableReadOnlyMode('lock-awal');
-            }
         })
         .catch(error => {
             console.error(error);
