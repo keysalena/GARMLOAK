@@ -19,9 +19,6 @@
         <a href="{{ route('admin.kelas.index') }}" class="btn btn-secondary">
             Data Kelas dan Mahasiswa
         </a>
-        <a href="{{ route('admin.kelas.index') }}" class="btn btn-secondary">
-            Marker AR
-        </a>
     </div>
 </div>
 

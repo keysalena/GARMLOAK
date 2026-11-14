@@ -1,9 +1,9 @@
 <aside class="admin-sidebar" id="adminSidebar">
     <div class="brand-box">
-        <div class="brand-mark">D</div>
+        <div class="brand-mark">G</div>
         <div>
-            <p class="eyebrow">Menu</p>
-            <h2>Donezo</h2>
+            <p class="eyebrow">Admin</p>
+            <h2>GARML</h2>
         </div>
     </div>
 
@@ -33,14 +33,6 @@
                     </svg>
                 </span>
                 <span>Modul</span>
-            </a>
-            <a href="{{ route('admin.ar-content.index') }}" class="nav-link {{ request()->routeIs('admin.ar-content.*') ? 'active' : '' }}">
-                <span class="nav-icon">
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M12 2.6 4.8 6.2v11.6L12 21.4l7.2-3.6V6.2L12 2.6Zm0 2.1 5.3 2.7L12 10.2 6.7 7.4 12 4.7Zm-5.3 4.2 4.8 2.4v6.5L6.7 15.9V8.9Zm10.6 0v7l-4.8 2.4v-6.5l4.8-2.4Z" />
-                    </svg>
-                </span>
-                <span>AR Content</span>
             </a>
 
             <hr>

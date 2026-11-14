@@ -6,15 +6,32 @@
 <div class="page-header">
     <div>
         <p class="eyebrow text-green">Konten</p>
-        <h1>Kelola AR Content</h1>
+        <h1>{{ $selectedModule ? 'AR Content - ' . $selectedModule->judul : 'Kelola AR Content' }}</h1>
     </div>
-    <!-- Tombol Add memanggil fungsi JS openModal('create') -->
-    <button type="button" class="btn btn-primary" onclick="openModal('create')">+ Tambah AR</button>
+    @if (!$selectedModule || $items->isEmpty())
+        <button type="button" class="btn btn-primary" onclick="openModal('create')">+ Tambah AR</button>
+    @else
+        <span class="pill neutral">AR untuk modul ini sudah tersedia</span>
+    @endif
 </div>
+
+@if ($errors->any())
+    <div role="alert" style="padding: 16px; background-color: #fff3f3; color: #b42318; border: 1px solid #fecdca; border-radius: 8px; margin-bottom: 20px;">
+        @foreach ($errors->all() as $error)
+            <div>{{ $error }}</div>
+        @endforeach
+    </div>
+@endif
+
+@if (session('success'))
+    <div role="status" style="padding: 16px; background-color: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; border-radius: 8px; margin-bottom: 20px;">
+        {{ session('success') }}
+    </div>
+@endif
 
 <div class="panel-card">
     <div class="panel-header">
-        <h3>Daftar AR Content</h3>
+        <h3>{{ $selectedModule ? 'AR Content Modul' : 'Daftar AR Content' }}</h3>
         <span class="pill neutral">{{ $items->count() }} item</span>
     </div>
 
@@ -62,8 +79,8 @@
 </div>
 
 <!-- Modal Form AR Content -->
-<div id="arModal" class="modal-overlay" style="display: none;">
-    <div class="modal-content panel-card" style="max-width: 500px; margin: 5% auto;">
+<div id="arModal" class="modal-overlay" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5);">
+    <div class="modal-content panel-card" style="max-width: 500px; margin: 10vh auto; position: relative;">
         <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
             <h3 id="modalTitle">Tambah AR Content</h3>
             <button type="button" onclick="closeModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
@@ -79,7 +96,10 @@
                 <select name="module_id" id="inputModule" required>
                     <option value="" disabled selected>Pilih Modul</option>
                     @foreach ($modules as $module)
-                    <option value="{{ $module->module_id }}">{{ $module->judul }}</option>
+                    <option value="{{ $module->module_id }}"
+                            data-has-ar="{{ ($arContentCounts[$module->module_id] ?? 0) > 0 ? 'true' : 'false' }}">
+                        {{ $module->judul }}{{ ($arContentCounts[$module->module_id] ?? 0) > 0 ? ' (sudah ada AR)' : '' }}
+                    </option>
                     @endforeach
                 </select>
             </label>
@@ -111,6 +131,8 @@
     // Route dasar dari Laravel
     const storeUrl = "{{ route('admin.ar-content.store') }}";
     const updateUrlBase = "{{ url('ar-content') }}"; // URL base tanpa ID
+    const selectedModuleId = @json($selectedModule?->module_id);
+    const moduleSelect = document.getElementById('inputModule');
 
     function openModal(mode, data = null) {
         // Reset form setiap kali modal dibuka
@@ -120,16 +142,22 @@
             modalTitle.innerText = 'Tambah AR Content';
             form.action = storeUrl;
             formMethod.value = 'POST'; // Gunakan POST untuk Tambah
+            moduleSelect.value = selectedModuleId || '';
         } else if (mode === 'edit' && data) {
             modalTitle.innerText = 'Edit AR Content';
             form.action = `${updateUrlBase}/${data.ar_id}`;
             formMethod.value = 'PUT'; // Gunakan PUT untuk Edit
             
             // Isi form dengan data yang dilempar
-            document.getElementById('inputModule').value = data.module_id || '';
+            moduleSelect.value = data.module_id || '';
             document.getElementById('inputJudul').value = data.judul || '';
             document.getElementById('inputLink').value = data.model_3d_url || '';
         }
+
+        Array.from(moduleSelect.options).forEach(option => {
+            option.disabled = option.dataset.hasAr === 'true'
+                && (mode === 'create' || option.value !== String(data?.module_id));
+        });
         
         modal.style.display = 'block';
     }

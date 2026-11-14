@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 
 class AdminDashboardController extends Controller
 {
@@ -158,7 +159,9 @@ class AdminDashboardController extends Controller
 
     public function modulIndex()
     {
-        $items = Module::orderBy('urutan')->get();
+        $items = Module::with(['arContents' => fn ($query) => $query->orderBy('ar_id')])
+            ->orderBy('urutan')
+            ->get();
 
         return view('admin.pages.modul', compact('items'));
     }
@@ -166,15 +169,17 @@ class AdminDashboardController extends Controller
     public function storeModul(Request $request)
     {
         $data = $request->validate([
-            'kode_modul' => 'required|string|max:10',
             'judul'      => 'required|string|max:150',
-            'sub_cpmk'   => 'nullable|string|max:50',
             'deskripsi'  => 'nullable|string',
         ]);
 
+        $urutan = (Module::max('urutan') ?? 0) + 1;
+
         Module::create([
             ...$data,
-            'urutan' => (Module::max('urutan') ?? 0) + 1,
+            'kode_modul' => 'Modul ' . $urutan,
+            'sub_cpmk' => null,
+            'urutan' => $urutan,
         ]);
 
         return back()->with('success', 'Modul berhasil ditambahkan.');
@@ -183,13 +188,14 @@ class AdminDashboardController extends Controller
     public function updateModul(Request $request, Module $module)
     {
         $data = $request->validate([
-            'kode_modul' => 'required|string|max:10',
             'judul'      => 'required|string|max:150',
-            'sub_cpmk'   => 'nullable|string|max:50',
             'deskripsi'  => 'nullable|string',
         ]);
 
-        $module->update($data);
+        $module->update([
+            ...$data,
+            'kode_modul' => 'Modul ' . $module->urutan,
+        ]);
 
         return back()->with('success', 'Modul berhasil diperbarui.');
     }
@@ -207,17 +213,18 @@ class AdminDashboardController extends Controller
         $items = Materi::where('module_id', $module->module_id)
             ->orderBy('urutan')
             ->get();
+        $nextUrutan = (Materi::where('module_id', $module->module_id)->max('urutan') ?? 0) + 1;
 
-        return view('admin.pages.materi', compact('items', 'module'));
+        return view('admin.pages.materi', compact('items', 'module', 'nextUrutan'));
     }
 
     public function storeMateri(Request $request)
     {
-        $request->validate([
+        $data = $request->validate([
             'module_id'   => 'required|exists:modules,module_id',
             'judul'       => 'required|string|max:150',
             'tipe'        => 'required|in:teks,video,pdf,pendahuluan',
-            'urutan'      => 'required|integer',
+            'urutan'      => 'nullable|integer|min:1',
             'konten_teks' => 'nullable|string',
             'konten_url'  => 'nullable|string|max:255',
             'konten_file' => 'nullable|file|mimes:pdf,mp4,mov,avi|max:51200',
@@ -239,10 +246,10 @@ class AdminDashboardController extends Controller
         }
 
         Materi::create([
-            'module_id'   => $request->module_id,
-            'judul'       => $request->judul,
-            'tipe'        => $request->tipe,
-            'urutan'      => $request->urutan,
+            'module_id'   => $data['module_id'],
+            'judul'       => $data['judul'],
+            'tipe'        => $data['tipe'],
+            'urutan'      => $data['urutan'] ?? ((Materi::where('module_id', $data['module_id'])->max('urutan') ?? 0) + 1),
             'konten_teks' => $kontenTeks,
             'konten_url'  => $kontenUrl,
         ]);
@@ -252,11 +259,11 @@ class AdminDashboardController extends Controller
 
     public function updateMateri(Request $request, Materi $materi)
     {
-        $request->validate([
+        $data = $request->validate([
             'module_id'   => 'required|exists:modules,module_id',
             'judul'       => 'required|string|max:150',
             'tipe'        => 'required|in:teks,video,pdf,pendahuluan',
-            'urutan'      => 'required|integer',
+            'urutan'      => 'nullable|integer|min:1',
             'konten_teks' => 'nullable|string',
             'konten_url'  => 'nullable|string|max:255',
             'konten_file' => 'nullable|file|mimes:pdf,mp4,mov,avi|max:51200',
@@ -266,7 +273,7 @@ class AdminDashboardController extends Controller
         $kontenTeks = $materi->konten_teks;
 
         // PERBAIKAN: Izinkan 'pendahuluan' untuk menyimpan teks
-        if (in_array($request->tipe, ['teks', 'pendahuluan'])) {
+        if (in_array($data['tipe'], ['teks', 'pendahuluan'])) {
             $kontenTeks = $request->konten_teks;
 
             // Bersihkan URL/File lama jika sebelumnya bukan teks
@@ -274,7 +281,7 @@ class AdminDashboardController extends Controller
                 Storage::disk('public')->delete(str_replace('storage/', '', $kontenUrl));
             }
             $kontenUrl = null;
-        } elseif (in_array($request->tipe, ['video', 'pdf'])) {
+        } elseif (in_array($data['tipe'], ['video', 'pdf'])) {
             $kontenTeks = null;
 
             if ($request->hasFile('konten_file')) {
@@ -292,10 +299,14 @@ class AdminDashboardController extends Controller
         }
 
         $materi->update([
-            'module_id'   => $request->module_id,
-            'judul'       => $request->judul,
-            'tipe'        => $request->tipe,
-            'urutan'      => $request->urutan,
+            'module_id'   => $data['module_id'],
+            'judul'       => $data['judul'],
+            'tipe'        => $data['tipe'],
+            'urutan'      => $data['urutan'] ?? ((
+                Materi::where('module_id', $data['module_id'])
+                    ->where('materi_id', '!=', $materi->materi_id)
+                    ->max('urutan') ?? 0
+            ) + 1),
             'konten_teks' => $kontenTeks,
             'konten_url'  => $kontenUrl,
         ]);
@@ -314,33 +325,55 @@ class AdminDashboardController extends Controller
         return back()->with('success', 'Materi berhasil dihapus.');
     }
 
-    public function arContentIndex()
+    public function arContentIndex(Request $request)
     {
-        $items = ArContent::with('module')
+        $selectedModule = $request->filled('module_id')
+            ? Module::findOrFail($request->query('module_id'))
+            : null;
+
+        $itemsQuery = ArContent::with('module')
             ->orderBy('urutan')
-            ->get();
+            ->orderBy('ar_id');
 
         $modules = Module::orderBy('urutan')->get();
+        $arContentCounts = ArContent::selectRaw('module_id, COUNT(*) as content_count')
+            ->groupBy('module_id')
+            ->pluck('content_count', 'module_id');
 
-        return view('admin.pages.ar_content', compact('items', 'modules'));
+        if ($selectedModule) {
+            $itemsQuery->where('module_id', $selectedModule->module_id);
+        }
+
+        $items = $itemsQuery->get();
+
+        return view('admin.pages.ar_content', compact('items', 'modules', 'arContentCounts', 'selectedModule'));
     }
 
     public function storeArContent(Request $request)
     {
         $data = $request->validate([
             'module_id'    => 'required|exists:modules,module_id',
-            'judul'        => 'required|string|max:150',
             'model_3d_url' => 'required|url|max:255', // Diubah jadi required dan berformat URL
         ]);
 
-        ArContent::create([
-            'module_id'    => $data['module_id'],
-            'judul'        => $data['judul'],
-            'model_3d_url' => $data['model_3d_url'],
-            'urutan'       => (ArContent::where('module_id', $data['module_id'])->max('urutan') ?? 0) + 1,
-        ]);
+        return DB::transaction(function () use ($data) {
+            $module = Module::whereKey($data['module_id'])->lockForUpdate()->firstOrFail();
 
-        return back()->with('success', 'AR Content berhasil ditambahkan.');
+            if (ArContent::where('module_id', $data['module_id'])->exists()) {
+                return back()
+                    ->withErrors(['module_id' => 'Modul ini sudah memiliki AR Content. Silakan edit AR yang sudah ada.'])
+                    ->withInput();
+            }
+
+            ArContent::create([
+                'module_id'    => $data['module_id'],
+                'judul'        => $module->judul,
+                'model_3d_url' => $data['model_3d_url'],
+                'urutan'       => 1,
+            ]);
+
+            return back()->with('success', 'AR Content berhasil ditambahkan.');
+        });
     }
 
     public function updateArContent(Request $request, ArContent $arContent)
@@ -351,9 +384,21 @@ class AdminDashboardController extends Controller
             'model_3d_url' => 'required|url|max:255', // Diubah jadi required dan berformat URL
         ]);
 
-        $arContent->update($data);
+        return DB::transaction(function () use ($data, $arContent) {
+            if ((int) $data['module_id'] !== (int) $arContent->module_id) {
+                Module::whereKey($data['module_id'])->lockForUpdate()->firstOrFail();
 
-        return back()->with('success', 'AR Content berhasil diperbarui.');
+                if (ArContent::where('module_id', $data['module_id'])->exists()) {
+                    return back()
+                        ->withErrors(['module_id' => 'Modul tujuan sudah memiliki AR Content.'])
+                        ->withInput();
+                }
+            }
+
+            $arContent->update($data);
+
+            return back()->with('success', 'AR Content berhasil diperbarui.');
+        });
     }
 
     public function destroyArContent(ArContent $arContent)

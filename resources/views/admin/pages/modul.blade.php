@@ -21,19 +21,62 @@
         <button type="button" onclick="this.parentElement.style.display='none';" style="background: transparent; border: none; font-size: 1.2rem; color: #2e7d32; cursor: pointer;">&times;</button>
     </div>
 @endif
+@if ($errors->any())
+    <div role="alert" style="padding: 16px; background-color: #fff3f3; color: #b42318; border: 1px solid #fecdca; border-radius: 8px; margin-bottom: 20px;">
+        @foreach ($errors->all() as $error)
+            <div>{{ $error }}</div>
+        @endforeach
+    </div>
+@endif
+<style>
+    .module-table {
+        min-width: 920px;
+        table-layout: fixed;
+    }
+
+    .module-table th:nth-child(1) { width: 15%; }
+    .module-table th:nth-child(2) { width: 37%; }
+    .module-table th:nth-child(3) { width: 14%; }
+    .module-table th:nth-child(4) { width: 34%; }
+
+    .module-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        min-width: 240px;
+    }
+
+    .module-actions .btn {
+        justify-content: center;
+        min-height: 36px;
+        padding: 7px 10px;
+        white-space: nowrap;
+    }
+
+    .module-ar-link {
+        color: #18794e;
+        font-weight: 600;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+        white-space: nowrap;
+    }
+
+    .module-ar-link:hover {
+        color: #105c3a;
+    }
+</style>
 <div class="panel-card">
     <div class="panel-header">
         <h3>Daftar Modul</h3>
         <span class="pill neutral">{{ $items->count() }} item</span>
     </div>
 
-    <table class="data-table">
+    <table class="data-table module-table">
         <thead>
             <tr>
                 <th>Kode</th>
                 <th>Judul</th>
-                <th>Sub CPMK</th>
-                <th>Urutan</th>
+                <th>AR</th>
                 <th>Aksi</th>
             </tr>
         </thead>
@@ -42,44 +85,76 @@
             <tr>
                 <td>{{ $item->kode_modul }}</td>
                 <td>{{ $item->judul }}</td>
-                <td>{{ $item->sub_cpmk ?? '-' }}</td>
-                <td>{{ $item->urutan ?? '-' }}</td>
-                <!-- Pada bagian <tbody> tabel modul, ubah <td> aksi menjadi seperti ini: -->
-                <td class="action-cell">
-                    <!-- Tombol untuk masuk ke materi khusus modul ini -->
-                    <a href="{{ route('admin.modul.materi', $item->module_id) }}" class="btn btn-small btn-primary">
-                        Kelola Materi
-                    </a>
-
-                   <!-- Tombol Edit (Ikon Bulat Abu-abu) -->
-                        <button type="button" title="Edit Modul"
-                            style="background: transparent; border: 1px solid #d1d5db; border-radius: 50%; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #4b5563; transition: all 0.2s;"
-                            onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='transparent'"
+                <td>
+                    @php($arLink = $item->arContents->firstWhere('model_3d_url', '!=', null))
+                    @if ($arLink)
+                        <a href="{{ $arLink->model_3d_url }}" target="_blank" rel="noopener noreferrer" class="module-ar-link">
+                            Lihat AR
+                        </a>
+                    @elseif ($item->arContents->isNotEmpty())
+                        <span class="pill neutral">AR terdaftar</span>
+                    @else
+                        <button type="button" class="btn btn-small btn-primary"
+                            data-module-id="{{ $item->module_id }}"
+                            data-module-title="{{ $item->judul }}"
+                            onclick="openArModal(this)">
+                            + Add AR
+                        </button>
+                    @endif
+                </td>
+                <td>
+                    <div class="module-actions">
+                        <a href="{{ route('admin.modul.materi', $item->module_id) }}" class="btn btn-small btn-primary">
+                            Kelola Materi
+                        </a>
+                        <a href="{{ route('admin.modul.questions', $item->module_id) }}" class="btn btn-small btn-primary">
+                            Kelola Kuis
+                        </a>
+                        <button type="button" class="btn btn-small btn-secondary"
                             data-item="{{ json_encode($item) }}"
                             onclick="openModal('edit', JSON.parse(this.getAttribute('data-item')))">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                            Edit
                         </button>
-
-                        <!-- Tombol Hapus (Ikon Bulat Merah) -->
-                        <button type="button" title="Hapus Modul"
-                            style="background: #fee2e2; border: 1px solid #fecaca; border-radius: 50%; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #ef4444; transition: all 0.2s;"
-                            onmouseover="this.style.background='#fecaca'" onmouseout="this.style.background='#fee2e2'"
-                            onclick="confirmSingleDelete('{{ route('admin.modul.destroy', $item->module_id) }}', '{{$item->judul }}')">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        <button type="button" class="btn btn-small btn-danger"
+                            data-module-delete-url="{{ route('admin.modul.destroy', $item->module_id) }}"
+                            data-delete-title="{{ $item->judul }}"
+                            onclick="confirmSingleDelete(this.dataset.moduleDeleteUrl, this.dataset.deleteTitle)">
+                            Hapus
                         </button>
-
-                    <a href="{{ route('admin.modul.questions', $item->module_id) }}" class="btn btn-small btn-primary">
-                        Kelola Kuis
-                    </a>
+                    </div>
                 </td>
             </tr>
             @empty
             <tr>
-                <td colspan="5" class="empty-state">Belum ada data modul.</td>
+                <td colspan="4" class="empty-state">Belum ada data modul.</td>
             </tr>
             @endforelse
         </tbody>
     </table>
+</div>
+
+<div id="arAddModal" class="modal-overlay" style="display: none; z-index: 9999;">
+    <div class="modal-content panel-card" style="max-width: 500px; margin: 10vh auto; position: relative;">
+        <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 id="arAddModalTitle">Tambah AR Content</h3>
+            <button type="button" onclick="closeArModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+        </div>
+
+        <form id="arAddForm" method="POST" action="{{ route('admin.ar-content.store') }}" class="login-form" style="padding: 20px;">
+            @csrf
+            <input type="hidden" name="module_id" id="arAddModuleId">
+
+            <label class="field-group">
+                <span>Link Web AR</span>
+                <input type="url" name="model_3d_url" id="arAddLink" placeholder="https://..." required>
+            </label>
+
+            <div class="action-cell" style="margin-top: 20px;">
+                <button type="submit" class="btn btn-primary" onclick="setLoading(this)">Simpan</button>
+                <button type="button" class="btn btn-secondary" onclick="closeArModal()">Batal</button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <!-- ==========================================
@@ -98,18 +173,8 @@
             <input type="hidden" name="_method" id="formMethod" value="POST">
 
             <label class="field-group">
-                <span>Kode Modul</span>
-                <input type="text" name="kode_modul" id="inputKodeModul" required>
-            </label>
-
-            <label class="field-group">
                 <span>Judul</span>
                 <input type="text" name="judul" id="inputJudul" required>
-            </label>
-
-            <label class="field-group">
-                <span>Sub CPMK</span>
-                <input type="text" name="sub_cpmk" id="inputSubCpmk">
             </label>
 
             <label class="field-group">
@@ -194,9 +259,7 @@
             formMethod.value = 'PUT'; // Gunakan PUT untuk update
 
             // Isi form dengan data yang dilempar dari button Edit
-            document.getElementById('inputKodeModul').value = data.kode_modul || '';
             document.getElementById('inputJudul').value = data.judul || '';
-            document.getElementById('inputSubCpmk').value = data.sub_cpmk || '';
             document.getElementById('inputDeskripsi').value = data.deskripsi || '';
         }
 
@@ -205,6 +268,23 @@
 
     function closeModal() {
         modal.style.display = 'none';
+    }
+
+    const arAddModal = document.getElementById('arAddModal');
+    const arAddForm = document.getElementById('arAddForm');
+    const arAddModuleId = document.getElementById('arAddModuleId');
+    const arAddLink = document.getElementById('arAddLink');
+    const arAddModalTitle = document.getElementById('arAddModalTitle');
+
+    function openArModal(button) {
+        arAddForm.reset();
+        arAddModuleId.value = button.dataset.moduleId;
+        arAddModalTitle.innerText = `Tambah AR - ${button.dataset.moduleTitle}`;
+        arAddModal.style.display = 'flex';
+    }
+
+    function closeArModal() {
+        arAddModal.style.display = 'none';
     }
 
         function setLoading(button) {
@@ -241,6 +321,15 @@
     window.onclick = function(event) {
         if (event.target === modal) closeModal();
         if (event.target === singleDeleteModal) closeSingleDeleteModal();
+        if (event.target === arAddModal) closeArModal();
     }
+
+    @if (old('module_id') && ($errors->has('module_id') || $errors->has('model_3d_url')))
+        const oldArModuleButton = document.querySelector(`[data-module-id="{{ old('module_id') }}"]`);
+        if (oldArModuleButton) {
+            openArModal(oldArModuleButton);
+            arAddLink.value = @json(old('model_3d_url'));
+        }
+    @endif
 </script>
 @endsection

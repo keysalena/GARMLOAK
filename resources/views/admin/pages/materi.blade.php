@@ -126,7 +126,7 @@
         </div>
 
         <!-- PERBAIKAN: Pindahkan syncEditor ke onsubmit form -->
-        <form id="materiForm" method="POST" action="" enctype="multipart/form-data" class="login-form" style="padding: 20px;" onsubmit="syncEditor()">
+        <form id="materiForm" method="POST" action="" enctype="multipart/form-data" class="login-form" style="padding: 20px;">
             @csrf
             <input type="hidden" name="_method" id="formMethod" value="POST">
             <input type="hidden" name="module_id" id="inputModule" value="{{ $module->module_id }}">
@@ -149,7 +149,7 @@
 
                 <label class="field-group" style="grid-column: 1 / -1;">
                     <span>Urutan Tampil</span>
-                    <input type="number" name="urutan" id="inputUrutan" min="1" required style="width: 50%;">
+                    <input type="number" name="urutan" id="inputUrutan" min="1" style="width: 50%;">
                 </label>
             </div>
 
@@ -171,7 +171,7 @@
             </div>
 
             <div class="action-cell" style="margin-top: 20px;">
-                <button type="submit" class="btn btn-primary" onclick="setLoading(this)">Simpan</button>
+                <button type="submit" class="btn btn-primary">Simpan</button>
                 <button type="button" class="btn btn-secondary" onclick="closeModal()">Batal</button>
             </div>
         </form>
@@ -340,6 +340,7 @@
 
     const storeUrl = "{{ route('admin.materi.store') }}";
     const updateUrlBase = "{{ url('materi') }}";
+    const nextUrutan = @json($nextUrutan);
 
     inputTipe.addEventListener('change', function() {
         toggleKontenInput(this.value);
@@ -369,6 +370,7 @@
             modalTitle.innerText = 'Tambah Materi Baru';
             form.action = storeUrl;
             formMethod.value = 'POST';
+            document.getElementById('inputUrutan').value = nextUrutan;
             toggleKontenInput('teks');
         } else if (mode === 'edit' && data) {
             modalTitle.innerText = 'Edit Materi';
@@ -401,12 +403,14 @@
         }
     }
 
+    form.addEventListener('submit', function() {
+        syncEditor();
+        setLoading(form.querySelector('button[type="submit"]'));
+    });
+
     function setLoading(button) {
         button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Menyimpan...';
-
-        setTimeout(() => {
-            button.disabled = true;
-        }, 10);
+        button.disabled = true;
     }
     const singleDeleteModal = document.getElementById('singleDeleteModal');
     const singleDeleteForm = document.getElementById('singleDeleteForm');
